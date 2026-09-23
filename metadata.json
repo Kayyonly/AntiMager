@@ -1,0 +1,6 @@
+{
+  "name": "AntiMager",
+  "description": "Reminder app pintar untuk orang males dan lupa. Dilengkapi AI natural language task parsing, voice command, habit streak, smart priority sorting, reminder lokasi, persistent notifications, dan share WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
