@@ -8,6 +8,8 @@ import android.os.Looper
 import android.widget.Toast
 import com.example.data.local.AppDatabase
 import com.example.util.NotificationHelper
+import com.example.util.TaskReminderScheduler
+import com.example.widget.AntiMagerWidgetProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -25,6 +27,8 @@ class ReminderActionReceiver : BroadcastReceiver() {
                 CoroutineScope(Dispatchers.IO).launch {
                     database.taskDao().setTaskCompleted(taskId, true)
                     NotificationHelper.dismissNotification(context, taskId)
+                    TaskReminderScheduler.cancel(context, taskId)
+                    AntiMagerWidgetProvider.sendUpdateBroadcast(context)
 
                     Handler(Looper.getMainLooper()).post {
                         Toast.makeText(context, "🎉 Mantap! Tugas ditandai selesai.", Toast.LENGTH_SHORT).show()
@@ -40,12 +44,13 @@ class ReminderActionReceiver : BroadcastReceiver() {
                         val newDeadline = System.currentTimeMillis() + fifteenMinutesMillis
                         database.taskDao().snoozeTask(taskId, newDeadline)
 
-                        // Re-trigger notification with updated snooze info
                         val updatedTask = task.copy(
                             deadlineEpochMillis = newDeadline,
                             snoozeCount = task.snoozeCount + 1
                         )
-                        NotificationHelper.showPersistentReminderNotification(context, updatedTask)
+                        NotificationHelper.dismissNotification(context, taskId)
+                        TaskReminderScheduler.schedule(context, updatedTask)
+                        AntiMagerWidgetProvider.sendUpdateBroadcast(context)
 
                         Handler(Looper.getMainLooper()).post {
                             Toast.makeText(context, "⏰ Ditunda 15 menit. Awas jangan keterusan ya!", Toast.LENGTH_SHORT).show()
