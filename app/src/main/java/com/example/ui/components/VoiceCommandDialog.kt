@@ -43,6 +43,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +63,7 @@ import com.example.ui.theme.AppleTextPlaceholder
 import com.example.ui.theme.AppleTextPrimary
 import com.example.ui.theme.AppleTextSecondary
 import com.example.ui.theme.AppleTextTertiary
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
@@ -75,6 +77,7 @@ fun VoiceCommandDialog(
     var isListening by remember { mutableStateOf(false) }
     var isParsing by remember { mutableStateOf(false) }
     var statusText by remember { mutableStateOf("Ketuk mikrofon untuk mulai bicara") }
+    val coroutineScope = rememberCoroutineScope()
 
     // Fallback system activity launcher
     val speechIntentLauncher = rememberLauncherForActivityResult(
@@ -86,9 +89,14 @@ fun VoiceCommandDialog(
             if (!spoken.isNullOrBlank()) {
                 spokenText = spoken
                 statusText = "Menganalisis tugas..."
-                val parsed = AiTaskParserService.parseStory(spoken)
-                parsedResult = parsed
-                statusText = if (parsed.isAmbiguous) parsed.aiAdvice else "Tugas berhasil dikenali!"
+                isParsing = true
+                coroutineScope.launch {
+                    val parsed = AiTaskParserService.parseWithExternalApi(spoken)
+                        ?: AiTaskParserService.parseStory(spoken)
+                    parsedResult = parsed
+                    isParsing = false
+                    statusText = if (parsed.isAmbiguous) parsed.aiAdvice else "Tugas berhasil dikenali!"
+                }
             } else {
                 statusText = "Tidak ada suara yang terdeteksi"
             }
@@ -102,12 +110,15 @@ fun VoiceCommandDialog(
 
     fun processRecognizedText(text: String) {
         spokenText = text
-        statusText = "Menganalisis tugas dengan AI..."
+        statusText = "Menganalisis tugas..."
         isParsing = true
-        val parsed = AiTaskParserService.parseStory(text)
-        parsedResult = parsed
-        isParsing = false
-        statusText = if (parsed.isAmbiguous) parsed.aiAdvice else "Tugas berhasil dikenali!"
+        coroutineScope.launch {
+            val parsed = AiTaskParserService.parseWithExternalApi(text)
+                ?: AiTaskParserService.parseStory(text)
+            parsedResult = parsed
+            isParsing = false
+            statusText = if (parsed.isAmbiguous) parsed.aiAdvice else "Tugas berhasil dikenali!"
+        }
     }
 
     fun startListeningWithRecognizer(ctx: Context) {
