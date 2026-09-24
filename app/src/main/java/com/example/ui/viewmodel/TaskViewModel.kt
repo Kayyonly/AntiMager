@@ -254,7 +254,8 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         estimatedMinutes: Int = 30,
         priority: String = "MEDIUM",
         isPersistent: Boolean = true,
-        locationName: String? = null
+        locationName: String? = null,
+        locationTrigger: String? = null
     ) {
         viewModelScope.launch {
             val task = TaskEntity(
@@ -266,11 +267,15 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
                 priority = priority,
                 isCompleted = false,
                 isPersistent = isPersistent,
-                locationName = locationName?.trim()?.ifBlank { null }
+                locationName = locationName?.trim()?.ifBlank { null },
+                locationTrigger = if (locationName.isNullOrBlank()) null else (locationTrigger ?: "ENTER")
             )
             val newId = repository.insertTask(task)
             val createdTask = task.copy(id = newId)
             TaskReminderScheduler.schedule(getApplication(), createdTask)
+            if (!createdTask.locationName.isNullOrBlank()) {
+                LocationReminderManager.refreshGeofencesIfActive(getApplication())
+            }
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
             // Re-run AI sort to factor in the new task
             triggerGeminiAiSort()
