@@ -14,6 +14,7 @@ import com.example.util.LocationReminderManager
 import com.example.util.NotificationHelper
 import com.example.util.SmartPrioritySorter
 import com.example.util.SortMode
+import com.example.util.TaskReminderScheduler
 import com.example.widget.AntiMagerWidgetProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -207,8 +208,12 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
             repository.setTaskCompleted(task.id, newCompleted)
             if (newCompleted) {
                 NotificationHelper.dismissNotification(getApplication(), task.id)
+                TaskReminderScheduler.cancel(getApplication(), task.id)
+            } else {
+                TaskReminderScheduler.schedule(getApplication(), task.copy(isCompleted = false))
             }
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
+            triggerGeminiAiSort()
         }
     }
 
@@ -220,10 +225,10 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
                 deadlineEpochMillis = newDeadline,
                 snoozeCount = task.snoozeCount + 1
             )
-            if (task.isPersistent) {
-                NotificationHelper.showPersistentReminderNotification(getApplication(), updated)
-            }
+            NotificationHelper.dismissNotification(getApplication(), task.id)
+            TaskReminderScheduler.schedule(getApplication(), updated)
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
+            triggerGeminiAiSort()
         }
     }
 
@@ -231,7 +236,9 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.deleteTask(task)
             NotificationHelper.dismissNotification(getApplication(), task.id)
+            TaskReminderScheduler.cancel(getApplication(), task.id)
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
+            triggerGeminiAiSort()
         }
     }
 
@@ -262,10 +269,8 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
                 locationName = locationName?.trim()?.ifBlank { null }
             )
             val newId = repository.insertTask(task)
-            if (isPersistent) {
-                val createdTask = task.copy(id = newId)
-                NotificationHelper.showPersistentReminderNotification(getApplication(), createdTask)
-            }
+            val createdTask = task.copy(id = newId)
+            TaskReminderScheduler.schedule(getApplication(), createdTask)
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
             // Re-run AI sort to factor in the new task
             triggerGeminiAiSort()
