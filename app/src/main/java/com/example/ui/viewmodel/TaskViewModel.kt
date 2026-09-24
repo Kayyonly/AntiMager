@@ -8,14 +8,18 @@ import com.example.data.ai.AiTaskParserService
 import com.example.data.ai.ParsedTaskResult
 import com.example.data.local.entity.TaskEntity
 import com.example.data.repository.TaskRepository
+import com.example.data.service.AiPrioritySortResult
+import com.example.data.service.GeminiPriorityService
 import com.example.util.LocationReminderManager
 import com.example.util.NotificationHelper
 import com.example.util.SmartPrioritySorter
 import com.example.util.SortMode
+import com.example.widget.AntiMagerWidgetProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -34,7 +38,12 @@ data class TaskUiState(
     val searchQuery: String = "",
     val activeLocation: String? = null,
     val lastLocationMessage: String? = null,
-    val voiceResultPrompt: String? = null
+    val voiceResultPrompt: String? = null,
+    val isAiSortingLoading: Boolean = false,
+    val aiModelUsed: String? = null,
+    val aiGlobalAdvice: String? = null,
+    val taskAiRationaleMap: Map<Long, String> = emptyMap(),
+    val taskAiBadgeMap: Map<Long, Pair<String, String>> = emptyMap()
 )
 
 private data class FilteredTaskData(
@@ -43,7 +52,9 @@ private data class FilteredTaskData(
     val urgentCount: Int,
     val sortMode: SortMode,
     val filter: TaskFilter,
-    val searchQuery: String
+    val searchQuery: String,
+    val isAiSortingLoading: Boolean,
+    val aiSortResult: AiPrioritySortResult?
 )
 
 class TaskViewModel(application: Application) : AndroidViewModel(application) {
@@ -56,15 +67,26 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
     private val _activeLocation = MutableStateFlow<String?>(null)
     private val _lastLocationMessage = MutableStateFlow<String?>(null)
     private val _voiceParsedTask = MutableStateFlow<ParsedTaskResult?>(null)
+    private val _isAiSortingLoading = MutableStateFlow(false)
+    private val _aiSortResult = MutableStateFlow<AiPrioritySortResult?>(null)
 
     val voiceParsedTask: StateFlow<ParsedTaskResult?> = _voiceParsedTask
 
+    @Suppress("UNCHECKED_CAST")
     private val _filteredData = combine(
         repository.allTasks,
         _sortMode,
         _filter,
-        _searchQuery
-    ) { allTasks, sortMode, filter, search ->
+        _searchQuery,
+        _isAiSortingLoading,
+        _aiSortResult
+    ) { args: Array<Any?> ->
+        val allTasks = args[0] as List<TaskEntity>
+        val sortMode = args[1] as SortMode
+        val filter = args[2] as TaskFilter
+        val search = args[3] as String
+        val isAiLoading = args[4] as Boolean
+        val aiResult = args[5] as? AiPrioritySortResult
         val now = System.currentTimeMillis()
 
         // 1. Filter by status
@@ -85,8 +107,15 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        // 3. Smart Priority Sorting
-        val sorted = SmartPrioritySorter.sortTasks(filteredBySearch, sortMode, now)
+        // 3. Smart Priority Sorting:
+        val sorted = if (sortMode == SortMode.SMART_AI && aiResult != null && aiResult.prioritizedTasks.isNotEmpty()) {
+            val (pending, completed) = filteredBySearch.partition { !it.isCompleted }
+            val rankMap = aiResult.prioritizedTasks.associate { it.task.id to it.rank }
+            val sortedPending = pending.sortedBy { rankMap[it.id] ?: 999 }
+            sortedPending + completed.sortedByDescending { it.deadlineEpochMillis }
+        } else {
+            SmartPrioritySorter.sortTasks(filteredBySearch, sortMode, now)
+        }
 
         val pendingCount = allTasks.count { !it.isCompleted }
         val urgentCount = allTasks.count { !it.isCompleted && SmartPrioritySorter.calculateUrgency(it, now).score >= 60 }
@@ -97,7 +126,9 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
             urgentCount = urgentCount,
             sortMode = sortMode,
             filter = filter,
-            searchQuery = search
+            searchQuery = search,
+            isAiSortingLoading = isAiLoading,
+            aiSortResult = aiResult
         )
     }
 
@@ -106,6 +137,14 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         _activeLocation,
         _lastLocationMessage
     ) { filtered, activeLoc, locMsg ->
+        val rationaleMap = filtered.aiSortResult?.prioritizedTasks?.associate {
+            it.task.id to it.aiRationale
+        } ?: emptyMap()
+
+        val badgeMap = filtered.aiSortResult?.prioritizedTasks?.associate {
+            it.task.id to Pair(it.badgeLabel, it.badgeColorHex)
+        } ?: emptyMap()
+
         TaskUiState(
             tasks = filtered.tasks,
             totalPending = filtered.pendingCount,
@@ -114,7 +153,12 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
             filter = filtered.filter,
             searchQuery = filtered.searchQuery,
             activeLocation = activeLoc,
-            lastLocationMessage = locMsg
+            lastLocationMessage = locMsg,
+            isAiSortingLoading = filtered.isAiSortingLoading,
+            aiModelUsed = filtered.aiSortResult?.modelName,
+            aiGlobalAdvice = filtered.aiSortResult?.globalAdvice,
+            taskAiRationaleMap = rationaleMap,
+            taskAiBadgeMap = badgeMap
         )
     }.stateIn(
         scope = viewModelScope,
@@ -122,8 +166,31 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         initialValue = TaskUiState()
     )
 
+    init {
+        // Automatically perform smart priority sorting on startup
+        triggerGeminiAiSort()
+    }
+
+    fun triggerGeminiAiSort() {
+        viewModelScope.launch {
+            _isAiSortingLoading.value = true
+            try {
+                val currentTasks = repository.allTasks.first()
+                val result = GeminiPriorityService.sortTasksWithGemini(currentTasks)
+                _aiSortResult.value = result
+            } catch (e: Exception) {
+                // ignore
+            } finally {
+                _isAiSortingLoading.value = false
+            }
+        }
+    }
+
     fun setSortMode(mode: SortMode) {
         _sortMode.value = mode
+        if (mode == SortMode.SMART_AI && _aiSortResult.value == null) {
+            triggerGeminiAiSort()
+        }
     }
 
     fun setFilter(filter: TaskFilter) {
@@ -141,6 +208,7 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
             if (newCompleted) {
                 NotificationHelper.dismissNotification(getApplication(), task.id)
             }
+            AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
         }
     }
 
@@ -155,6 +223,7 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
             if (task.isPersistent) {
                 NotificationHelper.showPersistentReminderNotification(getApplication(), updated)
             }
+            AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
         }
     }
 
@@ -162,6 +231,7 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.deleteTask(task)
             NotificationHelper.dismissNotification(getApplication(), task.id)
+            AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
         }
     }
 
@@ -196,12 +266,18 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
                 val createdTask = task.copy(id = newId)
                 NotificationHelper.showPersistentReminderNotification(getApplication(), createdTask)
             }
+            AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
+            // Re-run AI sort to factor in the new task
+            triggerGeminiAiSort()
         }
     }
 
     fun handleVoiceTranscription(spokenText: String) {
-        val parsed = AiTaskParserService.parseStory(spokenText)
-        _voiceParsedTask.value = parsed
+        viewModelScope.launch {
+            val parsed = AiTaskParserService.parseWithExternalApi(spokenText)
+                ?: AiTaskParserService.parseStory(spokenText)
+            _voiceParsedTask.value = parsed
+        }
     }
 
     fun clearVoiceParsedTask() {

@@ -32,6 +32,10 @@ object WhatsAppShareHelper {
         }
     }
 
+    fun shareTask(context: Context, task: TaskEntity) {
+        shareToWhatsApp(context, task)
+    }
+
     fun shareToWhatsApp(context: Context, task: TaskEntity) {
         val message = formatShareMessage(task)
         val sendIntent = Intent(Intent.ACTION_SEND).apply {

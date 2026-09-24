@@ -2,6 +2,7 @@ package com.example.data.repository
 
 import com.example.data.local.dao.HabitDao
 import com.example.data.local.entity.HabitEntity
+import com.example.util.HabitStreakCalculator
 import kotlinx.coroutines.flow.Flow
 
 class HabitRepository(private val habitDao: HabitDao) {
@@ -18,30 +19,8 @@ class HabitRepository(private val habitDao: HabitDao) {
 
     suspend fun checkInHabit(id: Long) {
         val habit = habitDao.getHabitById(id) ?: return
-        val todayEpochDay = System.currentTimeMillis() / (1000 * 60 * 60 * 24)
-
-        if (habit.lastCompletedEpochDay == todayEpochDay) {
-            // Already checked in today, uncheck
-            val newStreak = (habit.streakCount - 1).coerceAtLeast(0)
-            val updated = habit.copy(
-                streakCount = newStreak,
-                lastCompletedEpochDay = todayEpochDay - 1
-            )
-            habitDao.updateHabit(updated)
-        } else {
-            // Check if streak is continuous (yesterday checkin)
-            val newStreak = if (habit.lastCompletedEpochDay == todayEpochDay - 1) {
-                habit.streakCount + 1
-            } else {
-                1
-            }
-            val newBest = maxOf(habit.bestStreak, newStreak)
-            val updated = habit.copy(
-                streakCount = newStreak,
-                bestStreak = newBest,
-                lastCompletedEpochDay = todayEpochDay
-            )
-            habitDao.updateHabit(updated)
-        }
+        val todayEpochDay = HabitStreakCalculator.getLocalEpochDay()
+        val updatedHabit = HabitStreakCalculator.toggleCheckIn(habit, todayEpochDay)
+        habitDao.updateHabit(updatedHabit)
     }
 }

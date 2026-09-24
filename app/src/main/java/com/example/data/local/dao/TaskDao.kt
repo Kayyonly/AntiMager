@@ -18,6 +18,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE isCompleted = 0 ORDER BY deadlineEpochMillis ASC")
     fun getPendingTasks(): Flow<List<TaskEntity>>
 
+    @Query("SELECT * FROM tasks WHERE isCompleted = 0 ORDER BY deadlineEpochMillis ASC")
+    suspend fun getIncompleteTasks(): List<TaskEntity>
+
     @Query("SELECT * FROM tasks WHERE id = :id LIMIT 1")
     suspend fun getTaskById(id: Long): TaskEntity?
 

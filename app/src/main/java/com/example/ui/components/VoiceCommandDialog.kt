@@ -1,19 +1,19 @@
 package com.example.ui.components
 
+import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Bundle
+import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,15 +32,14 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,22 +47,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.content.ContextCompat
 import com.example.data.ai.AiTaskParserService
 import com.example.data.ai.ParsedTaskResult
-import com.example.ui.theme.CyanAccent
-import com.example.ui.theme.GlassCardBorder
-import com.example.ui.theme.GlassCardFill
-import com.example.ui.theme.LavenderAccent
-import com.example.ui.theme.MintAccent
-import com.example.ui.theme.TextMuted
-import com.example.ui.theme.TextSecondary
-import com.example.ui.theme.TextWhitePrimary
+import com.example.ui.theme.AppleSystemBlue
+import com.example.ui.theme.AppleSystemRed
+import com.example.ui.theme.AppleTextPlaceholder
+import com.example.ui.theme.AppleTextPrimary
+import com.example.ui.theme.AppleTextSecondary
+import com.example.ui.theme.AppleTextTertiary
 import java.util.Locale
 
 @Composable
@@ -71,47 +69,179 @@ fun VoiceCommandDialog(
     onDismiss: () -> Unit,
     onSaveParsedTask: (ParsedTaskResult) -> Unit
 ) {
+    val context = LocalContext.current
     var spokenText by remember { mutableStateOf("") }
     var parsedResult by remember { mutableStateOf<ParsedTaskResult?>(null) }
     var isListening by remember { mutableStateOf(false) }
+    var isParsing by remember { mutableStateOf(false) }
+    var statusText by remember { mutableStateOf("Ketuk mikrofon untuk mulai bicara") }
 
-    // Speech recognition launcher
-    val speechLauncher = rememberLauncherForActivityResult(
+    // Fallback system activity launcher
+    val speechIntentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         isListening = false
-        if (result.resultCode == Activity.RESULT_OK) {
-            val spokenMatches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            val recognized = spokenMatches?.firstOrNull() ?: ""
-            if (recognized.isNotBlank()) {
-                spokenText = recognized
-                parsedResult = AiTaskParserService.parseStory(recognized)
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+            if (!spoken.isNullOrBlank()) {
+                spokenText = spoken
+                statusText = "Menganalisis tugas..."
+                val parsed = AiTaskParserService.parseStory(spoken)
+                parsedResult = parsed
+                statusText = if (parsed.isAmbiguous) parsed.aiAdvice else "Tugas berhasil dikenali!"
+            } else {
+                statusText = "Tidak ada suara yang terdeteksi"
+            }
+        } else {
+            statusText = "Perekaman dibatalkan"
+        }
+    }
+
+    // Android SpeechRecognizer instance managed cleanly
+    var speechRecognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
+
+    fun processRecognizedText(text: String) {
+        spokenText = text
+        statusText = "Menganalisis tugas dengan AI..."
+        isParsing = true
+        val parsed = AiTaskParserService.parseStory(text)
+        parsedResult = parsed
+        isParsing = false
+        statusText = if (parsed.isAmbiguous) parsed.aiAdvice else "Tugas berhasil dikenali!"
+    }
+
+    fun startListeningWithRecognizer(ctx: Context) {
+        if (!SpeechRecognizer.isRecognitionAvailable(ctx)) {
+            // Fallback to system voice recognition intent
+            try {
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, "id-ID")
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "id-ID")
+                    putExtra(RecognizerIntent.EXTRA_PROMPT, "Katakan tugasmu...")
+                }
+                speechIntentLauncher.launch(intent)
+            } catch (e: Exception) {
+                statusText = "Fitur suara tidak tersedia di perangkat ini"
+            }
+            return
+        }
+
+        try {
+            speechRecognizer?.destroy()
+            val recognizer = SpeechRecognizer.createSpeechRecognizer(ctx)
+            speechRecognizer = recognizer
+
+            recognizer.setRecognitionListener(object : RecognitionListener {
+                override fun onReadyForSpeech(params: Bundle?) {
+                    isListening = true
+                    statusText = "Mendengarkan... Katakan tugasmu sekarang"
+                }
+
+                override fun onBeginningOfSpeech() {
+                    statusText = "Mendengarkan ucapanmu..."
+                }
+
+                override fun onRmsChanged(rmsdB: Float) {}
+
+                override fun onBufferReceived(buffer: ByteArray?) {}
+
+                override fun onEndOfSpeech() {
+                    isListening = false
+                    statusText = "Memproses suara..."
+                }
+
+                override fun onError(error: Int) {
+                    isListening = false
+                    statusText = when (error) {
+                        SpeechRecognizer.ERROR_NO_MATCH -> "Tidak ada suara yang dikenali. Coba bicara lebih dekat."
+                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Waktu bicara habis. Ketuk mikrofon untuk coba lagi."
+                        SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Koneksi internet bermasalah."
+                        SpeechRecognizer.ERROR_AUDIO -> "Gagal mengakses input audio mikrofon."
+                        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Izin mikrofon belum diberikan."
+                        SpeechRecognizer.ERROR_CLIENT -> "Perekaman dibatalkan."
+                        else -> "Tidak dapat memproses suara. Coba lagi."
+                    }
+                }
+
+                override fun onResults(results: Bundle?) {
+                    isListening = false
+                    val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    val text = matches?.firstOrNull()
+                    if (!text.isNullOrBlank()) {
+                        processRecognizedText(text)
+                    } else {
+                        statusText = "Tidak ada teks yang terdeteksi"
+                    }
+                }
+
+                override fun onPartialResults(partialResults: Bundle?) {
+                    val partialMatches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    partialMatches?.firstOrNull()?.let {
+                        spokenText = it
+                    }
+                }
+
+                override fun onEvent(eventType: Int, params: Bundle?) {}
+            })
+
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "id-ID")
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "id-ID")
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            }
+            recognizer.startListening(intent)
+        } catch (e: Exception) {
+            isListening = false
+            statusText = "Gagal memulai perekam suara: ${e.localizedMessage}"
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            startListeningWithRecognizer(context)
+        } else {
+            isListening = false
+            statusText = "Izin mikrofon diperlukan untuk mendengarkan suara"
+            Toast.makeText(context, "Izin mikrofon diperlukan", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun initiateListening() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            startListeningWithRecognizer(context)
+        } else {
+            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                speechRecognizer?.stopListening()
+                speechRecognizer?.destroy()
+                speechRecognizer = null
+            } catch (e: Exception) {
+                // Ignore disposal exceptions
             }
         }
     }
 
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.18f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
-    )
-
     Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color(0xFF0F172A),
-            border = androidx.compose.foundation.BorderStroke(1.dp, GlassCardBorder),
-            modifier = Modifier.fillMaxWidth()
+        val modalShape = RoundedCornerShape(20.dp)
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(modalShape)
+                .background(Color(0xF818181A))
+                .padding(20.dp)
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header with close
@@ -121,124 +251,121 @@ fun VoiceCommandDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "🎙️ Voice Command",
+                        text = "Perintah Suara",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextWhitePrimary
+                        color = AppleTextPrimary,
+                        letterSpacing = (-0.3).sp
                     )
-                    IconButton(onClick = onDismiss) {
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Tutup",
-                            tint = TextSecondary
+                            tint = AppleTextSecondary,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
 
-                Text(
-                    text = "Ucapkan tugasmu, AI akan ubah otomatis jadi pengingat rapi!",
-                    fontSize = 12.sp,
-                    color = TextSecondary,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Pulsing Mic Button
+                // Clean Mic Button (Apple Voice style)
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
-                        .scale(if (isListening) pulseScale else 1f)
+                        .size(68.dp)
                         .clip(CircleShape)
-                        .background(
-                            if (isListening) CyanAccent.copy(alpha = 0.3f) else GlassCardFill
-                        )
-                        .border(
-                            width = 2.dp,
-                            color = if (isListening) CyanAccent else GlassCardBorder,
-                            shape = CircleShape
-                        )
+                        .background(if (isListening) AppleSystemBlue else Color(0xFF28282C))
                         .clickable {
-                            isListening = true
-                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                putExtra(
-                                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-                                )
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "id-ID")
-                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Katakan tugasmu (contoh: 'PR IPS besok pagi jam 8')...")
+                            if (isListening) {
+                                try {
+                                    speechRecognizer?.stopListening()
+                                } catch (e: Exception) {
+                                    // ignore
+                                }
+                                isListening = false
+                            } else {
+                                initiateListening()
                             }
-                            speechLauncher.launch(intent)
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Mic,
-                        contentDescription = "Rekam Suara",
-                        tint = if (isListening) CyanAccent else TextWhitePrimary,
-                        modifier = Modifier.size(38.dp)
-                    )
+                    if (isParsing) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            strokeWidth = 2.5.dp,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = "Mulai Bicara",
+                            tint = Color.White,
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = if (isListening) "Mendengarkan suara..." else "Ketuk mikrofon untuk bicara",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isListening) CyanAccent else TextSecondary
+                    text = statusText,
+                    fontSize = 13.sp,
+                    color = if (isListening) AppleSystemBlue else AppleTextSecondary,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Text Field for checking/editing or manual voice simulation
+                // Text field fallback
                 OutlinedTextField(
                     value = spokenText,
                     onValueChange = {
                         spokenText = it
                         if (it.isNotBlank()) {
-                            parsedResult = AiTaskParserService.parseStory(it)
+                            val parsed = AiTaskParserService.parseStory(it)
+                            parsedResult = parsed
+                            statusText = if (parsed.isAmbiguous) parsed.aiAdvice else "Tugas dikenali!"
                         } else {
                             parsedResult = null
+                            statusText = "Ketik atau katakan tugasmu..."
                         }
                     },
                     placeholder = {
-                        Text("Atau ketik contoh ucapan di sini...", color = TextMuted, fontSize = 12.sp)
+                        Text("Atau ketik ucapan di sini...", color = AppleTextPlaceholder, fontSize = 13.sp)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = CyanAccent,
-                        unfocusedBorderColor = GlassCardBorder,
-                        focusedContainerColor = GlassCardFill,
-                        unfocusedContainerColor = GlassCardFill,
-                        focusedTextColor = TextWhitePrimary,
-                        unfocusedTextColor = TextWhitePrimary
+                        focusedBorderColor = AppleSystemBlue,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = Color(0xFF222226),
+                        unfocusedContainerColor = Color(0xFF222226),
+                        focusedTextColor = AppleTextPrimary,
+                        unfocusedTextColor = AppleTextPrimary
                     ),
                     maxLines = 2
                 )
 
                 // Quick preset voice prompts
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     val presets = listOf(
                         "PR IPS besok jam 8",
-                        "Resume biologi nanti malam 30 menit",
-                        "Beli alat tulis di Indomaret"
+                        "Jumat kumpul tugas IPA",
+                        "Beli alat tulis"
                     )
                     presets.forEach { preset ->
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(LavenderAccent.copy(alpha = 0.15f))
-                                .border(1.dp, LavenderAccent.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFF242428))
                                 .clickable {
-                                    spokenText = preset
-                                    parsedResult = AiTaskParserService.parseStory(preset)
+                                    processRecognizedText(preset)
                                 }
                                 .padding(horizontal = 6.dp, vertical = 6.dp),
                             contentAlignment = Alignment.Center
@@ -246,7 +373,7 @@ fun VoiceCommandDialog(
                             Text(
                                 text = preset,
                                 fontSize = 10.sp,
-                                color = LavenderAccent,
+                                color = AppleTextSecondary,
                                 maxLines = 1
                             )
                         }
@@ -255,16 +382,15 @@ fun VoiceCommandDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Parsed Task Preview Card
-                AnimatedVisibility(visible = parsedResult != null) {
+                // Parsed Task Preview
+                AnimatedVisibility(visible = parsedResult != null && !parsedResult!!.isAmbiguous) {
                     parsedResult?.let { parsed ->
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color(0xFF1E293B).copy(alpha = 0.8f))
-                                .border(1.dp, MintAccent.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                                .padding(14.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF222226))
+                                .padding(12.dp)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -272,91 +398,65 @@ fun VoiceCommandDialog(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "✨ Hasil AI Parsing",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MintAccent
+                                    text = parsed.title,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = AppleTextPrimary
                                 )
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(LavenderAccent.copy(alpha = 0.2f))
-                                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                                ) {
-                                    Text(
-                                        text = parsed.subject,
-                                        fontSize = 11.sp,
-                                        color = LavenderAccent,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
+                                Text(
+                                    text = parsed.subject,
+                                    fontSize = 11.sp,
+                                    color = AppleTextTertiary
+                                )
                             }
 
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            Text(
-                                text = parsed.title,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextWhitePrimary
-                            )
-
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
 
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
                                         imageVector = Icons.Default.Schedule,
                                         contentDescription = null,
-                                        tint = CyanAccent,
-                                        modifier = Modifier.size(13.dp)
+                                        tint = AppleTextSecondary,
+                                        modifier = Modifier.size(12.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = parsed.deadlineFormatted,
                                         fontSize = 12.sp,
-                                        color = TextWhitePrimary
+                                        color = AppleTextSecondary
                                     )
                                 }
-
                                 Text(
-                                    text = "⏱ ${parsed.estimatedMinutes} menit",
+                                    text = "· ${parsed.estimatedMinutes}m",
                                     fontSize = 12.sp,
-                                    color = TextSecondary
+                                    color = AppleTextTertiary
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(14.dp))
+                            if (!parsed.locationTag.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    text = "📍 ${parsed.locationTag}",
+                                    fontSize = 11.sp,
+                                    color = AppleTextSecondary
+                                )
+                            }
 
-                            Button(
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            GlassButton(
+                                text = "Konfirmasi & Simpan",
                                 onClick = {
                                     onSaveParsedTask(parsed)
                                     onDismiss()
                                 },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(44.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MintAccent,
-                                    contentColor = Color(0xFF00331F)
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Done,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Simpan ke Pengingat",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
-                                )
-                            }
+                                icon = Icons.Default.Done,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
                 }

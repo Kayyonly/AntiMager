@@ -20,5 +20,6 @@ data class TaskEntity(
     val locationTrigger: String? = null, // "ENTER", "EXIT"
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val aiMotivationQuote: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

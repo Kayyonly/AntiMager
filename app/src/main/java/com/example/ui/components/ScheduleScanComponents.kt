@@ -79,6 +79,11 @@ import com.example.ui.theme.CyanAccent
 import com.example.ui.theme.GlassCardBorder
 import com.example.ui.theme.GlassCardFill
 import com.example.ui.theme.LavenderAccent
+import com.example.ui.theme.GlassBorderHighlight
+import com.example.ui.theme.GlassBorderStandard
+import com.example.ui.theme.GlassModalBackground
+import com.example.ui.theme.LiquidDarkCard
+import com.example.ui.theme.LiquidDarkElevated
 import com.example.ui.theme.MintAccent
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextSecondary
@@ -96,8 +101,8 @@ fun ScanOptionDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(26.dp),
-            color = Color(0xFF0F172A),
-            border = androidx.compose.foundation.BorderStroke(1.dp, GlassCardBorder),
+            color = GlassModalBackground,
+            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorderStandard),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -338,7 +343,7 @@ fun ClassMismatchDialog(
     ) {
         Surface(
             shape = RoundedCornerShape(26.dp),
-            color = Color(0xFF0F172A),
+            color = GlassModalBackground,
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.6f)),
             modifier = Modifier
                 .fillMaxWidth(0.92f)
@@ -583,8 +588,8 @@ fun ScanningProgressDialog() {
     ) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = Color(0xFF0F172A),
-            border = androidx.compose.foundation.BorderStroke(1.dp, CyanAccent.copy(alpha = 0.5f)),
+            color = GlassModalBackground,
+            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorderHighlight),
             modifier = Modifier.fillMaxWidth(0.9f)
         ) {
             Column(
@@ -1001,11 +1006,11 @@ fun EditableScheduleItemCard(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = accentColor,
-                        unfocusedBorderColor = GlassCardBorder,
+                        unfocusedBorderColor = GlassBorderStandard,
                         focusedTextColor = TextWhitePrimary,
                         unfocusedTextColor = TextWhitePrimary,
-                        focusedContainerColor = Color(0xFF0F172A).copy(alpha = 0.7f),
-                        unfocusedContainerColor = Color(0xFF0F172A).copy(alpha = 0.7f)
+                        focusedContainerColor = LiquidDarkCard,
+                        unfocusedContainerColor = LiquidDarkCard
                     ),
                     singleLine = true
                 )
@@ -1079,11 +1084,11 @@ fun EditableScheduleItemCard(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = accentColor,
-                        unfocusedBorderColor = GlassCardBorder,
+                        unfocusedBorderColor = GlassBorderStandard,
                         focusedTextColor = TextWhitePrimary,
                         unfocusedTextColor = TextWhitePrimary,
-                        focusedContainerColor = Color(0xFF0F172A).copy(alpha = 0.7f),
-                        unfocusedContainerColor = Color(0xFF0F172A).copy(alpha = 0.7f)
+                        focusedContainerColor = LiquidDarkCard,
+                        unfocusedContainerColor = LiquidDarkCard
                     ),
                     singleLine = true
                 )
@@ -1108,11 +1113,11 @@ fun EditableScheduleItemCard(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = accentColor,
-                        unfocusedBorderColor = GlassCardBorder,
+                        unfocusedBorderColor = GlassBorderStandard,
                         focusedTextColor = TextWhitePrimary,
                         unfocusedTextColor = TextWhitePrimary,
-                        focusedContainerColor = Color(0xFF0F172A).copy(alpha = 0.7f),
-                        unfocusedContainerColor = Color(0xFF0F172A).copy(alpha = 0.7f)
+                        focusedContainerColor = LiquidDarkCard,
+                        unfocusedContainerColor = LiquidDarkCard
                     ),
                     singleLine = true
                 )
@@ -1137,11 +1142,11 @@ fun EditableScheduleItemCard(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = accentColor,
-                        unfocusedBorderColor = GlassCardBorder,
+                        unfocusedBorderColor = GlassBorderStandard,
                         focusedTextColor = TextWhitePrimary,
                         unfocusedTextColor = TextWhitePrimary,
-                        focusedContainerColor = Color(0xFF0F172A).copy(alpha = 0.7f),
-                        unfocusedContainerColor = Color(0xFF0F172A).copy(alpha = 0.7f)
+                        focusedContainerColor = LiquidDarkCard,
+                        unfocusedContainerColor = LiquidDarkCard
                     ),
                     singleLine = true
                 )

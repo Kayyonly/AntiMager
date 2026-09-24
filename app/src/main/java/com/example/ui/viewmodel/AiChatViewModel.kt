@@ -9,6 +9,7 @@ import com.example.data.ai.ParsedTaskResult
 import com.example.data.local.entity.TaskEntity
 import com.example.data.repository.TaskRepository
 import com.example.util.NotificationHelper
+import com.example.widget.AntiMagerWidgetProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,13 +39,14 @@ data class AiChatUiState(
 class AiChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = TaskRepository(AntiMagerApp.instance.database.taskDao())
+    private var lastAmbiguousContext: String? = null
 
     private val _uiState = MutableStateFlow(
         AiChatUiState(
             messages = listOf(
                 ChatMessage(
                     sender = ChatSender.AI,
-                    text = "Halo sobat mager! 👋 Cerita aja apa tugas atau hal yang harus kamu kerjain. Misalnya:\n• *PR IPS besok jam 8 pagi*\n• *Nanti malam resume biologi 30 mnt*\n• *Beli alat tulis di Indomaret*\n\nBiar aku yang parse otomatis jadi pengingat rapi!"
+                    text = "Halo sobat mager! 👋 Ceritakan tugas atau hal yang harus kamu kerjakan. Misalnya:\n• *PR IPS besok*\n• *Kerjain matematika jam 8 malam*\n• *Jumat kumpul tugas IPA*\n• *Nanti sore ingetin beli buku*\n• *Besok sebelum sekolah bawa seragam olahraga*\n\nBiar aku yang parse otomatis jadi pengingat rapi!"
                 )
             )
         )
@@ -72,29 +74,47 @@ class AiChatViewModel(application: Application) : AndroidViewModel(application) 
         )
 
         viewModelScope.launch {
-            // Simulate realistic quick response time
-            delay(400)
+            delay(300)
 
-            // Try external API placeholder first, fallback to Indonesian smart parser
-            val parsedResult = AiTaskParserService.parseWithExternalApi(trimmed)
-                ?: AiTaskParserService.parseStory(trimmed)
+            val contextToUse = lastAmbiguousContext
+            // Parse with external API or fallback to Indonesian smart parser
+            val parsedResult = AiTaskParserService.parseWithExternalApi(trimmed, contextToUse)
+                ?: AiTaskParserService.parseStory(trimmed, contextToUse)
 
-            val aiResponseText = buildString {
-                append("Siap! Udah aku ringkas jadi jadwal rapi nih 👇\n\n")
-                append(parsedResult.aiAdvice)
+            if (parsedResult.isAmbiguous) {
+                // Ambiguous input: ask follow-up clarification and remember context
+                lastAmbiguousContext = trimmed
+                val question = parsedResult.clarificationQuestion ?: "Tugas apa yang mau dikerjakan? Ceritakan judul atau mapelnya ya!"
+                val aiMessage = ChatMessage(
+                    sender = ChatSender.AI,
+                    text = question,
+                    parsedTask = null,
+                    isSavedToDatabase = false
+                )
+                _uiState.value = _uiState.value.copy(
+                    messages = _uiState.value.messages + aiMessage,
+                    isThinking = false
+                )
+            } else {
+                // Clear ambiguous context now that full task is resolved
+                lastAmbiguousContext = null
+                val aiResponseText = buildString {
+                    append("Siap! Udah aku uraikan jadi jadwal rapi nih 👇\n\n")
+                    append(parsedResult.aiAdvice)
+                }
+
+                val aiMessage = ChatMessage(
+                    sender = ChatSender.AI,
+                    text = aiResponseText,
+                    parsedTask = parsedResult,
+                    isSavedToDatabase = false
+                )
+
+                _uiState.value = _uiState.value.copy(
+                    messages = _uiState.value.messages + aiMessage,
+                    isThinking = false
+                )
             }
-
-            val aiMessage = ChatMessage(
-                sender = ChatSender.AI,
-                text = aiResponseText,
-                parsedTask = parsedResult,
-                isSavedToDatabase = false
-            )
-
-            _uiState.value = _uiState.value.copy(
-                messages = _uiState.value.messages + aiMessage,
-                isThinking = false
-            )
         }
     }
 
@@ -113,6 +133,7 @@ class AiChatViewModel(application: Application) : AndroidViewModel(application) 
             )
             val newId = repository.insertTask(task)
             NotificationHelper.showPersistentReminderNotification(getApplication(), task.copy(id = newId))
+            AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
 
             // Update message state as saved
             val updatedMessages = _uiState.value.messages.map { msg ->

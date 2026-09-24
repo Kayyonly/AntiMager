@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Header Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tv_widget_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="AntiMager"
+            android:textColor="#1C1C1E"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_widget_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="#E8F2FF"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="3dp"
+            android:text="0 Tugas"
+            android:textColor="#007AFF"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="#F2F2F7" />
+
+    <!-- Content Task Row -->
+    <TextView
+        android:id="@+id/tv_widget_top_task"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:text="Tidak ada tugas tertunda. Santai dulu! ☕"
+        android:textColor="#3A3A3C"
+        android:textSize="13sp" />
+
+    <!-- Bottom Actions Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btn_widget_open"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:background="#F2F2F7"
+            android:gravity="center"
+            android:text="Buka App"
+            android:textColor="#1C1C1E"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <Space
+            android:layout_width="8dp"
+            android:layout_height="wrap_content" />
+
+        <!-- Quick Mic Trigger button -->
+        <ImageButton
+            android:id="@+id/btn_widget_voice"
+            android:layout_width="40dp"
+            android:layout_height="36dp"
+            android:background="#007AFF"
+            android:contentDescription="Voice Command Mic"
+            android:src="@android:drawable/ic_btn_speak_now" />
+    </LinearLayout>
+
+</LinearLayout>

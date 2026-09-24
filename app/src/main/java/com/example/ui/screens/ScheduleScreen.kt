@@ -72,14 +72,22 @@ import androidx.core.content.ContextCompat
 import com.example.data.local.entity.ScheduleEntity
 import com.example.ui.components.ClassMismatchDialog
 import com.example.ui.components.GlassCard
+import com.example.ui.components.IosCard
+import com.example.ui.components.IosSegmentedControl
 import com.example.ui.components.ScanOptionDialog
 import com.example.ui.components.ScanningProgressDialog
 import com.example.ui.components.ScheduleScanConfirmDialog
 import com.example.ui.components.createSampleMultiClassTimetableBitmap
 import com.example.ui.components.createSampleTimetableBitmap
 import com.example.ui.theme.CyanAccent
+import com.example.ui.theme.GlassBorderStandard
 import com.example.ui.theme.GlassCardBorder
 import com.example.ui.theme.GlassCardFill
+import com.example.ui.theme.GlassModalBackground
+import com.example.ui.theme.IosBlue
+import com.example.ui.theme.IosIndigo
+import com.example.ui.theme.IosTextPrimary
+import com.example.ui.theme.IosTextSecondary
 import com.example.ui.theme.LavenderAccent
 import com.example.ui.theme.MintAccent
 import com.example.ui.theme.TextMuted
@@ -171,15 +179,16 @@ fun ScheduleScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Jadwal Pelajaran 📚",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = TextWhitePrimary
+                        text = "Jadwal Pelajaran",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = IosTextPrimary,
+                        letterSpacing = (-0.5).sp
                     )
                     Text(
-                        text = "Biar gak salah bawa buku & tau jam istirahat",
-                        fontSize = 11.sp,
-                        color = TextSecondary
+                        text = "Jadwal kelas, mapel & jam istirahat",
+                        fontSize = 12.sp,
+                        color = IosTextSecondary
                     )
                 }
 
@@ -187,66 +196,44 @@ fun ScheduleScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Tombol Scan Jadwal dari Foto
-                    Box(
-                        modifier = Modifier
-                            .height(42.dp)
-                            .clip(RoundedCornerShape(21.dp))
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(
-                                        LavenderAccent.copy(alpha = 0.32f),
-                                        CyanAccent.copy(alpha = 0.22f)
-                                    )
-                                )
-                            )
-                            .border(
-                                1.2.dp,
-                                Brush.linearGradient(
-                                    colors = listOf(LavenderAccent, CyanAccent)
-                                ),
-                                RoundedCornerShape(21.dp)
-                            )
-                            .clickable { isScanOptionOpen = true }
-                            .padding(horizontal = 12.dp),
-                        contentAlignment = Alignment.Center
+                    // Tombol Scan Jadwal dari Foto (Apple iOS Minimalist Style)
+                    Button(
+                        onClick = { isScanOptionOpen = true },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = IosBlue.copy(alpha = 0.12f),
+                            contentColor = IosBlue
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.height(38.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.CameraAlt,
-                                contentDescription = "Scan Jadwal dari Foto",
-                                tint = LavenderAccent,
-                                modifier = Modifier.size(17.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Scan Foto",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextWhitePrimary
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = "Scan Jadwal dari Foto",
+                            tint = IosBlue,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Scan Foto",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
 
                     // Add Slot Button
-                    Box(
+                    IconButton(
+                        onClick = { viewModel.openAddForm() },
                         modifier = Modifier
-                            .size(42.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(CyanAccent.copy(alpha = 0.35f), Color(0xFF0284C7).copy(alpha = 0.20f))
-                                )
-                            )
-                            .border(1.2.dp, CyanAccent.copy(alpha = 0.6f), CircleShape)
-                            .clickable { viewModel.openAddForm() },
-                        contentAlignment = Alignment.Center
+                            .background(IosBlue)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Tambah Slot",
-                            tint = CyanAccent,
-                            modifier = Modifier.size(24.dp)
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -255,111 +242,75 @@ fun ScheduleScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             // Active Class Banner with Quick Settings Trigger
-            Row(
+            IosCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(GlassCardFill)
-                    .border(1.dp, CyanAccent.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
-                    .clickable { onOpenSettings?.invoke() }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .clickable { onOpenSettings?.invoke() },
+                elevation = 0.5.dp
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(CyanAccent.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(IosBlue.copy(alpha = 0.12f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.School,
+                                contentDescription = null,
+                                tint = IosBlue,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Profil Kelas Saya: ",
+                            fontSize = 12.sp,
+                            color = IosTextSecondary
+                        )
+                        Text(
+                            text = uiState.userClass,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = IosBlue
+                        )
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Ubah di Settings",
+                            fontSize = 11.sp,
+                            color = IosIndigo,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
                         Icon(
-                            imageVector = Icons.Default.School,
-                            contentDescription = null,
-                            tint = CyanAccent,
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Pengaturan",
+                            tint = IosIndigo,
                             modifier = Modifier.size(14.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Profil Kelas Saya: ",
-                        fontSize = 12.sp,
-                        color = TextSecondary
-                    )
-                    Text(
-                        text = uiState.userClass,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = CyanAccent
-                    )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Ubah di Settings",
-                        fontSize = 11.sp,
-                        color = LavenderAccent,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Pengaturan",
-                        tint = LavenderAccent,
-                        modifier = Modifier.size(14.dp)
-                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Mode Selector: [📅 Harian] vs [🗓️ Mingguan]
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF0F172A).copy(alpha = 0.75f))
-                    .border(1.dp, GlassCardBorder.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                val isDaily = uiState.viewMode == ScheduleViewMode.DAILY
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isDaily) CyanAccent.copy(alpha = 0.25f) else Color.Transparent)
-                        .clickable { viewModel.setViewMode(ScheduleViewMode.DAILY) }
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "📅 Jadwal Harian",
-                        fontSize = 13.sp,
-                        fontWeight = if (isDaily) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isDaily) CyanAccent else TextMuted
-                    )
-                }
-
-                val isWeekly = uiState.viewMode == ScheduleViewMode.WEEKLY
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isWeekly) LavenderAccent.copy(alpha = 0.25f) else Color.Transparent)
-                        .clickable { viewModel.setViewMode(ScheduleViewMode.WEEKLY) }
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "🗓️ Jadwal Mingguan",
-                        fontSize = 13.sp,
-                        fontWeight = if (isWeekly) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isWeekly) LavenderAccent else TextMuted
-                    )
-                }
-            }
+            // Mode Selector: [📅 Harian] vs [🗓️ Mingguan] (iOS Segmented Control)
+            IosSegmentedControl(
+                items = listOf(ScheduleViewMode.DAILY, ScheduleViewMode.WEEKLY),
+                selectedItem = uiState.viewMode,
+                onItemSelected = { viewModel.setViewMode(it) },
+                itemLabel = { mode: ScheduleViewMode -> if (mode == ScheduleViewMode.DAILY) "📅 Jadwal Harian" else "🗓️ Jadwal Mingguan" }
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -810,8 +761,8 @@ fun ScheduleAddEditDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = Color(0xFF0F172A),
-            border = androidx.compose.foundation.BorderStroke(1.dp, GlassCardBorder),
+            color = GlassModalBackground,
+            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorderStandard),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(

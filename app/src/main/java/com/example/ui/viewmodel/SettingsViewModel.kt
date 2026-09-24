@@ -18,7 +18,9 @@ data class SettingsUiState(
     val schoolName: String = "",
     val autoFilterClassSchedule: Boolean = true,
     val saveMessage: String? = null
-)
+) {
+    val autoFilterSchedule: Boolean get() = autoFilterClassSchedule
+}
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -60,6 +62,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun onAutoFilterToggle(enabled: Boolean) {
         _uiState.update { it.copy(autoFilterClassSchedule = enabled) }
     }
+
+    fun toggleAutoFilterSchedule(enabled: Boolean) = onAutoFilterToggle(enabled)
+
+    fun saveProfile() = saveSettings()
 
     fun saveSettings(onSuccess: (() -> Unit)? = null) {
         viewModelScope.launch {

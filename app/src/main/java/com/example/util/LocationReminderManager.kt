@@ -1,9 +1,18 @@
 package com.example.util
 
 import android.annotation.SuppressLint
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.location.Location
+import android.os.Build
+import android.util.Log
 import com.example.data.local.AppDatabase
+import com.example.receiver.GeofenceBroadcastReceiver
+import com.example.service.LocationTrackerService
+import com.google.android.gms.location.Geofence
+import com.google.android.gms.location.GeofencingClient
+import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +30,10 @@ data class GeofenceArea(
 )
 
 object LocationReminderManager {
+
+    private const val TAG = "LocationReminderManager"
+    private const val PREFS_NAME = "antimager_location_prefs"
+    private const val KEY_GEOFENCING_ACTIVE = "key_geofencing_active"
 
     val PRESET_LOCATIONS = listOf(
         GeofenceArea(
@@ -57,8 +70,105 @@ object LocationReminderManager {
         )
     )
 
+    fun isGeofencingActive(context: Context): Boolean {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_GEOFENCING_ACTIVE, false)
+    }
+
+    fun setGeofencingActive(context: Context, active: Boolean) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_GEOFENCING_ACTIVE, active)
+            .apply()
+    }
+
     /**
-     * Simulasi Trigger Masuk Area (Sangat berguna untuk uji coba langsung di Emulator)
+     * Mendaftarkan Geofence asli ke Android System GeofencingClient & Memulai Pemantau Background
+     */
+    @SuppressLint("MissingPermission")
+    fun startRealBackgroundGeofencing(context: Context, onResult: (Boolean, String) -> Unit) {
+        try {
+            val geofencingClient: GeofencingClient = LocationServices.getGeofencingClient(context)
+
+            // 1. Buat daftar geofence dari preset
+            val geofenceList = PRESET_LOCATIONS.map { area ->
+                Geofence.Builder()
+                    .setRequestId(area.id)
+                    .setCircularRegion(area.latitude, area.longitude, area.radiusMeters)
+                    .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                    .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
+                    .build()
+            }
+
+            val geofencingRequest = GeofencingRequest.Builder()
+                .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+                .addGeofences(geofenceList)
+                .build()
+
+            val intent = Intent(context, GeofenceBroadcastReceiver::class.java).apply {
+                action = GeofenceBroadcastReceiver.ACTION_GEOFENCE_EVENT
+            }
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+            val pendingIntent = PendingIntent.getBroadcast(context, 7001, intent, flags)
+
+            geofencingClient.addGeofences(geofencingRequest, pendingIntent)
+                .addOnSuccessListener {
+                    Log.d(TAG, "Real Android Geofencing registered successfully for ${geofenceList.size} areas")
+                    setGeofencingActive(context, true)
+                    // Start complementary background tracker service
+                    try {
+                        LocationTrackerService.startService(context)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Foreground service start exception", e)
+                    }
+                    onResult(true, "Geofencing latar belakang aktif untuk ${geofenceList.size} area!")
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Failed to register system geofences", e)
+                    // Even if Play Services geofence fails (e.g. play services outdated), start tracker service
+                    try {
+                        LocationTrackerService.startService(context)
+                        setGeofencingActive(context, true)
+                        onResult(true, "Pemantau lokasi aktif via Service Mandiri.")
+                    } catch (ex: Exception) {
+                        onResult(false, "Gagal mengaktifkan geofence: ${e.localizedMessage}")
+                    }
+                }
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception starting geofences", e)
+            onResult(false, "Error: ${e.localizedMessage}")
+        }
+    }
+
+    /**
+     * Mematikan Geofencing Background
+     */
+    fun stopRealBackgroundGeofencing(context: Context, onResult: (Boolean, String) -> Unit) {
+        try {
+            val geofencingClient = LocationServices.getGeofencingClient(context)
+            val intent = Intent(context, GeofenceBroadcastReceiver::class.java)
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+            val pendingIntent = PendingIntent.getBroadcast(context, 7001, intent, flags)
+
+            geofencingClient.removeGeofences(pendingIntent)
+            LocationTrackerService.stopService(context)
+            setGeofencingActive(context, false)
+            onResult(true, "Geofencing background telah dimatikan.")
+        } catch (e: Exception) {
+            onResult(false, "Gagal mematikan: ${e.localizedMessage}")
+        }
+    }
+
+    /**
+     * Simulasi Trigger Masuk Area (Fitur pengujian instan di emulator/demo)
      */
     fun simulateAreaEvent(context: Context, locationName: String, isEnter: Boolean, onResult: (String) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -76,7 +186,6 @@ object LocationReminderManager {
                             locationName = locationName,
                             taskCount = matchingTasks.size
                         )
-                        // Also trigger persistent notification for the most urgent task
                         val firstTask = matchingTasks.first()
                         NotificationHelper.showPersistentReminderNotification(context, firstTask)
                         onResult("📍 Masuk area $locationName! Ditemukan ${matchingTasks.size} tugas terkait. Notifikasi terkirim.")

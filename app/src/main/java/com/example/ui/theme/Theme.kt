@@ -5,24 +5,25 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val AntiMagerDarkColorScheme = darkColorScheme(
-    primary = CyanAccent,
-    onPrimary = Color(0xFF041E2B),
-    primaryContainer = Color(0xFF1E3A5F),
-    onPrimaryContainer = Color(0xFFDDF4FF),
-    secondary = LavenderAccent,
-    onSecondary = Color(0xFF26104A),
-    secondaryContainer = Color(0xFF38235E),
-    onSecondaryContainer = Color(0xFFEDE4FF),
-    tertiary = MintAccent,
-    onTertiary = Color(0xFF003822),
-    background = GlassBackgroundDark,
-    onBackground = TextWhitePrimary,
-    surface = GlassSurfaceDark,
-    onSurface = TextWhitePrimary,
-    surfaceVariant = Color(0xFF1E293B),
-    onSurfaceVariant = TextSecondary,
-    outline = GlassCardBorder
+private val AppleLiquidGlassColorScheme = darkColorScheme(
+    primary = AppleSystemBlue,
+    onPrimary = Color.White,
+    primaryContainer = AppleSystemBlueSubtle,
+    onPrimaryContainer = Color.White,
+    secondary = AppleSystemIndigo,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0x335E5CE6),
+    onSecondaryContainer = AppleTextPrimary,
+    tertiary = AppleSystemGreen,
+    onTertiary = Color.White,
+    background = LiquidDarkBackground,
+    onBackground = AppleTextPrimary,
+    surface = LiquidDarkCard,
+    onSurface = AppleTextPrimary,
+    surfaceVariant = LiquidDarkSurface,
+    onSurfaceVariant = AppleTextSecondary,
+    outline = GlassBorderStandard,
+    outlineVariant = GlassBorderSubtle
 )
 
 @Composable
@@ -30,7 +31,7 @@ fun AntiMagerTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = AntiMagerDarkColorScheme,
+        colorScheme = AppleLiquidGlassColorScheme,
         typography = Typography,
         content = content
     )

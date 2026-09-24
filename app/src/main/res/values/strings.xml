@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">AntiMager</string>
+    <string name="accessibility_service_description">Layanan AntiMager Focus Shield memantau aplikasi media sosial dan game yang dibuka agar kamu fokus menyelesaikan tugas terlebih dahulu.</string>
+    <string name="shortcut_voice_short">Voice Task</string>
+    <string name="shortcut_voice_long">Bicara untuk Catat Tugas Baru</string>
+    <string name="shortcut_add_short">Tambah Tugas</string>
+    <string name="shortcut_add_long">Tambah Tugas Baru Cepat</string>
+    <string name="widget_name">AntiMager Focus Widget</string>
+    <string name="widget_description">Widget ringkasan tugas dan jalan pintas cepat rekam suara.</string>
 </resources>

@@ -8,6 +8,9 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
@@ -21,6 +24,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication">
 
+        <!-- Main Launcher Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -31,8 +35,80 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- App Shortcuts -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
+        <!-- Feature 1: App Blocker Overlay Activity -->
+        <activity
+            android:name=".ui.activity.AppBlockerOverlayActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.MyApplication" />
+
+        <!-- Feature 1: App Blocker Accessibility Service -->
+        <service
+            android:name=".service.AppBlockerAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- Feature 4: Voice Action Activity (invokable via Shortcut, Widget, Voice, Assistant) -->
+        <activity
+            android:name=".ui.activity.VoiceActionActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MyApplication"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="com.aistudio.antimager.VOICE_COMMAND" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VOICE_COMMAND" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- Feature 3: Background Location Tracker Service -->
+        <service
+            android:name=".service.LocationTrackerService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
+
+        <!-- Feature 3: Geofence Background Broadcast Receiver -->
+        <receiver
+            android:name=".receiver.GeofenceBroadcastReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.aistudio.antimager.ACTION_GEOFENCE_EVENT" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Feature 4: Home Screen App Widget Provider -->
+        <receiver
+            android:name=".widget.AntiMagerWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/antimager_widget_info" />
+        </receiver>
+
+        <!-- Notification Actions Receiver -->
         <receiver
             android:name=".receiver.ReminderActionReceiver"
             android:exported="false">

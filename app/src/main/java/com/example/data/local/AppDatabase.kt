@@ -13,6 +13,7 @@ import com.example.data.local.entity.HabitEntity
 import com.example.data.local.entity.ScheduleEntity
 import com.example.data.local.entity.TaskEntity
 import com.example.data.local.entity.UserSettingsEntity
+import com.example.util.HabitStreakCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,7 +21,7 @@ import java.util.Calendar
 
 @Database(
     entities = [TaskEntity::class, HabitEntity::class, ScheduleEntity::class, UserSettingsEntity::class],
-    version = 3,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -52,6 +53,15 @@ abstract class AppDatabase : RoomDatabase() {
         private class DatabaseCallback : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
+                INSTANCE?.let { database ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                        seedInitialData(database)
+                    }
+                }
+            }
+
+            override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
+                super.onDestructiveMigration(db)
                 INSTANCE?.let { database ->
                     CoroutineScope(Dispatchers.IO).launch {
                         seedInitialData(database)
@@ -116,7 +126,11 @@ abstract class AppDatabase : RoomDatabase() {
                 )
 
                 // Seed Habits
-                val todayEpochDay = System.currentTimeMillis() / (1000 * 60 * 60 * 24)
+                val todayEpochDay = HabitStreakCalculator.getLocalEpochDay()
+                val habit1Days = (1..5).map { todayEpochDay - it }.joinToString(",")
+                val habit2Days = listOf(todayEpochDay - 2, todayEpochDay - 1, todayEpochDay).joinToString(",")
+                val habit3Days = (1..8).map { todayEpochDay - it }.joinToString(",")
+
                 database.habitDao().insertHabit(
                     HabitEntity(
                         name = "Minum 1 Gelas Air Pas Bangun",
@@ -125,6 +139,7 @@ abstract class AppDatabase : RoomDatabase() {
                         streakCount = 5,
                         bestStreak = 7,
                         lastCompletedEpochDay = todayEpochDay - 1,
+                        completedDaysCsv = habit1Days,
                         colorHex = "#38BDF8"
                     )
                 )
@@ -137,6 +152,7 @@ abstract class AppDatabase : RoomDatabase() {
                         streakCount = 3,
                         bestStreak = 4,
                         lastCompletedEpochDay = todayEpochDay,
+                        completedDaysCsv = habit2Days,
                         colorHex = "#A78BFA"
                     )
                 )
@@ -149,6 +165,7 @@ abstract class AppDatabase : RoomDatabase() {
                         streakCount = 8,
                         bestStreak = 12,
                         lastCompletedEpochDay = todayEpochDay - 1,
+                        completedDaysCsv = habit3Days,
                         colorHex = "#34D399"
                     )
                 )

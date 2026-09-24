@@ -28,8 +28,6 @@ import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.WaterDrop
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -45,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -52,15 +51,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.data.local.entity.HabitEntity
+import com.example.ui.components.GlassButton
+import com.example.ui.components.GlassButtonVariant
 import com.example.ui.components.GlassCard
-import com.example.ui.theme.CyanAccent
-import com.example.ui.theme.GlassCardBorder
-import com.example.ui.theme.GlassCardFill
-import com.example.ui.theme.LavenderAccent
-import com.example.ui.theme.MintAccent
-import com.example.ui.theme.TextMuted
-import com.example.ui.theme.TextSecondary
-import com.example.ui.theme.TextWhitePrimary
+import com.example.ui.components.LiquidGlassTokens
+import com.example.ui.theme.AppleSystemBlue
+import com.example.ui.theme.AppleSystemGreen
+import com.example.ui.theme.AppleSystemIndigo
+import com.example.ui.theme.AppleSystemOrange
+import com.example.ui.theme.AppleTextMuted
+import com.example.ui.theme.AppleTextPlaceholder
+import com.example.ui.theme.AppleTextPrimary
+import com.example.ui.theme.AppleTextSecondary
+import com.example.ui.theme.GlassBorderHighlight
+import com.example.ui.theme.GlassBorderStandard
+import com.example.ui.theme.GlassBorderSubtle
+import com.example.ui.theme.GlassLayer1
+import com.example.ui.theme.GlassLayer2
+import com.example.ui.theme.GlassModalBackground
+import com.example.ui.theme.LiquidDarkBackground
+import com.example.ui.theme.LiquidDarkCard
 import com.example.ui.viewmodel.HabitViewModel
 
 @Composable
@@ -74,125 +84,126 @@ fun HabitScreen(
 
     val todayEpochDay = remember { System.currentTimeMillis() / (1000 * 60 * 60 * 24) }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(LiquidDarkBackground)
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Header
+            // iOS Header Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Bottom
             ) {
                 Column {
                     Text(
-                        text = "Habit Streak 🔥",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = TextWhitePrimary
+                        text = "RUTINITAS POSITIF",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppleTextSecondary,
+                        letterSpacing = 0.6.sp
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Kebiasaan mikro harian buat kalahkan mager",
-                        fontSize = 12.sp,
-                        color = TextSecondary
+                        text = "Habit Streak",
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AppleTextPrimary,
+                        letterSpacing = (-0.6).sp
                     )
                 }
 
-                // Add button
+                // Add button (Liquid Glass primary circle)
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(42.dp)
                         .clip(CircleShape)
-                        .background(MintAccent.copy(alpha = 0.2f))
-                        .border(1.dp, MintAccent.copy(alpha = 0.4f), CircleShape)
+                        .background(AppleSystemBlue)
                         .clickable { showAddDialog = true },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Tambah Habit",
-                        tint = MintAccent,
+                        tint = Color.White,
                         modifier = Modifier.size(22.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // Overview Stats (3 cards)
+            // Overview Stats (3 Apple Health style inset cards with Liquid Glass depth)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                GlassCard(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
+                GlassCard(modifier = Modifier.weight(1f), elevation = 1.5.dp) {
                     Column(
-                        modifier = Modifier.padding(10.dp),
+                        modifier = Modifier.padding(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = "🔥", fontSize = 20.sp)
+                        Text(text = "🔥", fontSize = 22.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "${uiState.totalActiveStreaks}",
-                            fontSize = 16.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFB923C)
+                            color = AppleSystemOrange
                         )
                         Text(
                             text = "Streak Aktif",
                             fontSize = 10.sp,
-                            color = TextSecondary
+                            color = AppleTextSecondary
                         )
                     }
                 }
 
-                GlassCard(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
+                GlassCard(modifier = Modifier.weight(1f), elevation = 1.5.dp) {
                     Column(
-                        modifier = Modifier.padding(10.dp),
+                        modifier = Modifier.padding(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = "🏆", fontSize = 20.sp)
+                        Text(text = "🏆", fontSize = 22.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "${uiState.bestStreakOverall} Hari",
-                            fontSize = 16.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFBBF24)
+                            color = AppleSystemIndigo
                         )
                         Text(
                             text = "Rekor Terbaik",
                             fontSize = 10.sp,
-                            color = TextSecondary
+                            color = AppleTextSecondary
                         )
                     }
                 }
 
-                GlassCard(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
+                GlassCard(modifier = Modifier.weight(1f), elevation = 1.5.dp) {
                     Column(
-                        modifier = Modifier.padding(10.dp),
+                        modifier = Modifier.padding(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = "✅", fontSize = 20.sp)
+                        Text(text = "✅", fontSize = 22.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "${uiState.todayCompletedCount}/${uiState.habits.size}",
-                            fontSize = 16.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MintAccent
+                            color = AppleSystemGreen
                         )
                         Text(
                             text = "Hari Ini",
                             fontSize = 10.sp,
-                            color = TextSecondary
+                            color = AppleTextSecondary
                         )
                     }
                 }
@@ -205,25 +216,52 @@ fun HabitScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 24.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(bottom = 90.dp)
             ) {
-                items(uiState.habits, key = { it.id }) { habit ->
-                    val isCompletedToday = habit.lastCompletedEpochDay == todayEpochDay
-
-                    HabitItemCard(
-                        habit = habit,
-                        isCompletedToday = isCompletedToday,
-                        onCheckIn = {
-                            viewModel.checkIn(habit.id)
-                            val msg = if (isCompletedToday) "Check-in dibatalkan" else "🔥 Streak bertambah! Hebat!"
-                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                        },
-                        onDelete = {
-                            viewModel.deleteHabit(habit)
-                            Toast.makeText(context, "Habit dihapus", Toast.LENGTH_SHORT).show()
+                if (uiState.habits.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 50.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(text = "🌱", fontSize = 42.sp)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Mulai Kebiasaan Baru",
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = AppleTextPrimary
+                                )
+                                Text(
+                                    text = "Ketuk tombol + di atas untuk mencatat habit harianmu.",
+                                    fontSize = 13.sp,
+                                    color = AppleTextSecondary
+                                )
+                            }
                         }
-                    )
+                    }
+                } else {
+                    items(uiState.habits, key = { it.id }) { habit ->
+                        val isCompletedToday = habit.lastCompletedEpochDay == todayEpochDay
+
+                        HabitItemCard(
+                            habit = habit,
+                            isCompletedToday = isCompletedToday,
+                            onCheckIn = {
+                                viewModel.checkIn(habit.id)
+                                val msg = if (isCompletedToday) "Check-in dibatalkan" else "🔥 Streak bertambah! Hebat!"
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            },
+                            onDelete = {
+                                viewModel.deleteHabit(habit)
+                                Toast.makeText(context, "Habit dihapus", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -250,14 +288,15 @@ fun HabitItemCard(
     val accentColor = try {
         Color(android.graphics.Color.parseColor(habit.colorHex))
     } catch (e: Exception) {
-        CyanAccent
+        AppleSystemBlue
     }
 
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        backgroundColor = if (isCompletedToday) accentColor.copy(alpha = 0.12f) else GlassCardFill,
-        borderColor = if (isCompletedToday) accentColor.copy(alpha = 0.4f) else GlassCardBorder
+        shape = RoundedCornerShape(LiquidGlassTokens.RadiusCard),
+        backgroundColor = if (isCompletedToday) Color(0xFF131317) else LiquidDarkCard.copy(alpha = 0.88f),
+        borderColor = if (isCompletedToday) GlassBorderSubtle else GlassBorderStandard,
+        elevation = if (isCompletedToday) 0.5.dp else 2.dp
     ) {
         Row(
             modifier = Modifier
@@ -265,19 +304,19 @@ fun HabitItemCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Habit Icon
+            // Habit Icon Capsule
             Box(
                 modifier = Modifier
-                    .size(46.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
-                    .background(accentColor.copy(alpha = 0.2f))
-                    .border(1.dp, accentColor.copy(alpha = 0.5f), CircleShape),
+                    .background(accentColor.copy(alpha = 0.16f))
+                    .border(1.dp, accentColor.copy(alpha = 0.35f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 when (habit.iconName) {
-                    "water" -> Icon(Icons.Default.WaterDrop, contentDescription = null, tint = accentColor)
-                    "clean" -> Icon(Icons.Default.CleaningServices, contentDescription = null, tint = accentColor)
-                    else -> Icon(Icons.Default.Bolt, contentDescription = null, tint = accentColor)
+                    "water" -> Icon(Icons.Default.WaterDrop, contentDescription = null, tint = accentColor, modifier = Modifier.size(22.dp))
+                    "clean" -> Icon(Icons.Default.CleaningServices, contentDescription = null, tint = accentColor, modifier = Modifier.size(22.dp))
+                    else -> Icon(Icons.Default.Bolt, contentDescription = null, tint = accentColor, modifier = Modifier.size(22.dp))
                 }
             }
 
@@ -287,35 +326,37 @@ fun HabitItemCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = habit.name,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextWhitePrimary
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isCompletedToday) AppleTextMuted else AppleTextPrimary,
+                    letterSpacing = (-0.3).sp
                 )
 
                 if (habit.description.isNotBlank()) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = habit.description,
-                        fontSize = 11.sp,
-                        color = TextSecondary
+                        fontSize = 12.sp,
+                        color = AppleTextSecondary
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // Streak flame counter and best record
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFFFB923C).copy(alpha = 0.18f))
+                            .background(AppleSystemOrange.copy(alpha = 0.16f))
+                            .border(0.8.dp, AppleSystemOrange.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
                             .padding(horizontal = 7.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Default.LocalFireDepartment,
                             contentDescription = null,
-                            tint = Color(0xFFFB923C),
+                            tint = AppleSystemOrange,
                             modifier = Modifier.size(13.dp)
                         )
                         Spacer(modifier = Modifier.width(3.dp))
@@ -323,33 +364,51 @@ fun HabitItemCard(
                             text = "${habit.streakCount} Hari",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFB923C)
+                            color = AppleSystemOrange
                         )
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Text(
-                        text = "🏆 Rekor: ${habit.bestStreak}",
+                        text = "Rekor: ${habit.bestStreak} hari",
                         fontSize = 11.sp,
-                        color = TextSecondary
+                        color = AppleTextSecondary
                     )
                 }
             }
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            // Check-in Button
+            // Delete Action
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(LiquidGlassTokens.RadiusSmall))
+                    .background(GlassLayer1)
+                    .border(0.8.dp, GlassBorderSubtle, RoundedCornerShape(LiquidGlassTokens.RadiusSmall))
+                    .clickable { onDelete() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DeleteOutline,
+                    contentDescription = "Hapus Habit",
+                    tint = AppleTextMuted,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Circular Check-in Button (iOS tactile style)
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
                     .clip(CircleShape)
-                    .background(
-                        if (isCompletedToday) MintAccent else GlassCardFill
-                    )
+                    .background(if (isCompletedToday) AppleSystemGreen else Color(0x10FFFFFF))
                     .border(
-                        width = 1.5.dp,
-                        color = if (isCompletedToday) MintAccent else GlassCardBorder,
+                        width = if (isCompletedToday) 0.dp else 1.5.dp,
+                        color = if (isCompletedToday) Color.Transparent else Color(0x55FFFFFF),
                         shape = CircleShape
                     )
                     .clickable { onCheckIn() },
@@ -359,29 +418,10 @@ fun HabitItemCard(
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Selesai",
-                        tint = Color(0xFF00331F),
-                        modifier = Modifier.size(24.dp)
-                    )
-                } else {
-                    Text(
-                        text = "Check",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextSecondary
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
-            }
-
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.DeleteOutline,
-                    contentDescription = "Hapus",
-                    tint = TextMuted,
-                    modifier = Modifier.size(16.dp)
-                )
             }
         }
     }
@@ -390,114 +430,199 @@ fun HabitItemCard(
 @Composable
 fun AddHabitDialog(
     onDismiss: () -> Unit,
-    onAddHabit: (name: String, desc: String, icon: String, color: String) -> Unit
+    onAddHabit: (String, String, String, String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
-    var desc by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
     var selectedIcon by remember { mutableStateOf("bolt") }
-    var selectedColor by remember { mutableStateOf("#38BDF8") }
+    var selectedColor by remember { mutableStateOf("#0A84FF") }
 
-    val presetHabits = listOf(
-        Pair("Minum air 500ml", "Segarkan otak sehabis bangun"),
-        Pair("Review PR 5 menit", "Cek tugas tanpa tekanan"),
-        Pair("Beresin meja belajar", "Ruang bersih bikin gak mager"),
-        Pair("Stretching 3 menit", "Regangkan badan yang kaku")
+    val iconOptions = listOf(
+        "bolt" to "Energi ⚡",
+        "water" to "Minum Air 💧",
+        "clean" to "Beres-Beres 🧹"
     )
+
+    val colorOptions = listOf(
+        "#0A84FF" to "Biru",
+        "#30D158" to "Hijau",
+        "#FF9F0A" to "Oranye",
+        "#BF5AF2" to "Ungu",
+        "#FF453A" to "Merah"
+    )
+
+    val dialogShape = RoundedCornerShape(LiquidGlassTokens.RadiusPanel)
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(22.dp),
-            color = Color(0xFF0F172A),
-            border = androidx.compose.foundation.BorderStroke(1.dp, GlassCardBorder),
-            modifier = Modifier.fillMaxWidth()
+            shape = dialogShape,
+            color = GlassModalBackground,
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 1.dp,
+                    brush = Brush.verticalGradient(
+                        listOf(GlassBorderHighlight, GlassBorderStandard, Color(0x10FFFFFF))
+                    ),
+                    shape = dialogShape
+                )
         ) {
             Column(
                 modifier = Modifier
+                    .padding(22.dp)
                     .fillMaxWidth()
-                    .padding(20.dp)
             ) {
                 Text(
-                    text = "Tambah Micro-Habit 🎯",
+                    text = "Habit Baru",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextWhitePrimary
+                    color = AppleTextPrimary,
+                    letterSpacing = (-0.3).sp
                 )
                 Text(
-                    text = "Pilih kebiasaan kecil yang gampang diselesaikan",
+                    text = "Langkah kecil sehari-hari untuk konsistensi",
                     fontSize = 12.sp,
-                    color = TextSecondary
+                    color = AppleTextSecondary
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
-                // Name field
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = { Text("Contoh: Baca materi 5 halaman", color = TextMuted, fontSize = 13.sp) },
+                    label = { Text("Nama Habit", fontSize = 12.sp) },
+                    placeholder = { Text("Misal: Baca buku 15 menit", fontSize = 13.sp, color = AppleTextPlaceholder) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(LiquidGlassTokens.RadiusInput),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MintAccent,
-                        unfocusedBorderColor = GlassCardBorder,
-                        focusedContainerColor = GlassCardFill,
-                        unfocusedContainerColor = GlassCardFill,
-                        focusedTextColor = TextWhitePrimary,
-                        unfocusedTextColor = TextWhitePrimary
-                    )
+                        focusedBorderColor = AppleSystemBlue,
+                        unfocusedBorderColor = GlassBorderStandard,
+                        focusedTextColor = AppleTextPrimary,
+                        unfocusedTextColor = AppleTextPrimary,
+                        focusedContainerColor = LiquidDarkCard,
+                        unfocusedContainerColor = LiquidDarkCard
+                    ),
+                    singleLine = true
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Preset suggestions
-                Text(
-                    text = "Inspirasi kebiasaan anti-mager:",
-                    fontSize = 11.sp,
-                    color = TextSecondary
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Deskripsi / Target (Opsional)", fontSize = 12.sp) },
+                    placeholder = { Text("Contoh: Setiap sebelum tidur", fontSize = 13.sp, color = AppleTextPlaceholder) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(LiquidGlassTokens.RadiusInput),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AppleSystemBlue,
+                        unfocusedBorderColor = GlassBorderStandard,
+                        focusedTextColor = AppleTextPrimary,
+                        unfocusedTextColor = AppleTextPrimary,
+                        focusedContainerColor = LiquidDarkCard,
+                        unfocusedContainerColor = LiquidDarkCard
+                    ),
+                    singleLine = true
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    presetHabits.forEach { (pName, pDesc) ->
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Icon Picker
+                Text(text = "Pilih Ikon", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = AppleTextSecondary)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    iconOptions.forEach { (iconKey, label) ->
+                        val isSelected = selectedIcon == iconKey
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(LavenderAccent.copy(alpha = 0.12f))
-                                .clickable {
-                                    name = pName
-                                    desc = pDesc
-                                }
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                                .weight(1f)
+                                .clip(RoundedCornerShape(LiquidGlassTokens.RadiusSmall))
+                                .background(if (isSelected) AppleSystemBlue.copy(alpha = 0.2f) else GlassLayer1)
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isSelected) AppleSystemBlue else GlassBorderSubtle,
+                                    shape = RoundedCornerShape(LiquidGlassTokens.RadiusSmall)
+                                )
+                                .clickable { selectedIcon = iconKey }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "💡 $pName - $pDesc",
+                                text = label,
                                 fontSize = 11.sp,
-                                color = LavenderAccent
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) AppleSystemBlue else AppleTextSecondary
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                Button(
-                    onClick = {
-                        if (name.isNotBlank()) {
-                            onAddHabit(name, desc, selectedIcon, selectedColor)
-                            onDismiss()
-                        }
-                    },
-                    enabled = name.isNotBlank(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MintAccent,
-                        contentColor = Color(0xFF00331F)
-                    )
+                // Color Picker
+                Text(text = "Pilih Warna", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = AppleTextSecondary)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(text = "Mulai Bangun Streak 🔥", fontWeight = FontWeight.Bold)
+                    colorOptions.forEach { (colorHex, _) ->
+                        val color = Color(android.graphics.Color.parseColor(colorHex))
+                        val isSelected = selectedColor == colorHex
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                                .border(
+                                    width = if (isSelected) 2.5.dp else 0.dp,
+                                    color = if (isSelected) Color.White else Color.Transparent,
+                                    shape = CircleShape
+                                )
+                                .clickable { selectedColor = colorHex },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Dialog Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    GlassButton(
+                        text = "Batal",
+                        onClick = onDismiss,
+                        variant = GlassButtonVariant.SECONDARY,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    GlassButton(
+                        text = "Simpan",
+                        onClick = {
+                            if (name.isNotBlank()) {
+                                onAddHabit(name, description, selectedIcon, selectedColor)
+                                onDismiss()
+                            }
+                        },
+                        enabled = name.isNotBlank(),
+                        variant = GlassButtonVariant.PRIMARY,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
