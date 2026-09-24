@@ -92,7 +92,7 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
     private val _isFormOpen = MutableStateFlow(false)
 
     // User Class Setting State
-    private val _userClass = MutableStateFlow("X IPA 2")
+    private val _userClass = MutableStateFlow("")
 
     // Scan Vision state flows
     private val _isScanning = MutableStateFlow(false)
