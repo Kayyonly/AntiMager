@@ -98,7 +98,12 @@ object NotificationHelper {
         notificationManager.notify(task.id.toInt(), notification)
     }
 
-    fun showLocationAlertNotification(context: Context, locationName: String, taskCount: Int) {
+    fun showLocationAlertNotification(
+        context: Context,
+        locationName: String,
+        taskCount: Int,
+        isEnter: Boolean = true
+    ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     context,
@@ -123,8 +128,16 @@ object NotificationHelper {
 
         val notification = NotificationCompat.Builder(context, AntiMagerApp.CHANNEL_LOCATION_REMINDER)
             .setSmallIcon(android.R.drawable.ic_dialog_map)
-            .setContentTitle("📍 Kamu sampai di $locationName!")
-            .setContentText("Ada $taskCount tugas yang perlu kamu kerjakan di sini. Buka sekarang!")
+            .setContentTitle(
+                if (isEnter) "Kamu sampai di $locationName" else "Kamu keluar dari $locationName"
+            )
+            .setContentText(
+                if (isEnter) {
+                    "Ada $taskCount tugas yang aktif saat kamu tiba di sini."
+                } else {
+                    "Ada $taskCount tugas yang aktif saat kamu meninggalkan lokasi ini."
+                }
+            )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(openAppPendingIntent)
