@@ -70,6 +70,8 @@ import com.example.ui.theme.IosSurfaceCard
 import com.example.ui.theme.IosSystemBackground
 import com.example.ui.theme.IosTextPrimary
 import com.example.ui.theme.IosTextSecondary
+import com.example.util.LocationReminderManager
+import com.example.util.TaskReminderScheduler
 import com.example.widget.AntiMagerWidgetProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -304,9 +306,15 @@ private fun VoiceActionScreen(
                                     estimatedMinutes = parsed.estimatedMinutes,
                                     priority = parsed.priority,
                                     locationName = parsed.locationTag,
+                                    locationTrigger = if (parsed.locationTag.isNullOrBlank()) null else "ENTER",
                                     aiMotivationQuote = parsed.aiAdvice
                                 )
-                                db.taskDao().insertTask(entity)
+                                val newId = db.taskDao().insertTask(entity)
+                                val createdTask = entity.copy(id = newId)
+                                TaskReminderScheduler.schedule(context, createdTask)
+                                if (!createdTask.locationName.isNullOrBlank()) {
+                                    LocationReminderManager.refreshGeofencesIfActive(context)
+                                }
                                 onTaskSaved()
                             }
                         },
