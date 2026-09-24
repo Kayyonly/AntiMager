@@ -84,9 +84,9 @@ class GeminiScheduleVisionService {
             val base64Image = bitmapToBase64(scaledBitmap)
 
             if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
-                Log.w("GeminiVision", "GEMINI_API_KEY not configured or placeholder, using sample timetable parsing fallback")
-                val fallbackResult = generateFallbackScanResult(targetUserClass)
-                return@withContext Result.success(fallbackResult)
+                return@withContext Result.failure(
+                    IllegalStateException("Gemini API key belum dikonfigurasi. Scan foto tidak bisa dijalankan.")
+                )
             }
 
             val userClassPrompt = if (!targetUserClass.isNullOrBlank()) {
@@ -178,7 +178,9 @@ class GeminiScheduleVisionService {
 
             if (!response.isSuccessful) {
                 Log.e("GeminiVision", "API Error ${response.code}: $responseString")
-                return@withContext Result.success(generateFallbackScanResult(targetUserClass))
+                return@withContext Result.failure(
+                    IllegalStateException("Gemini Vision gagal (HTTP ${response.code}). Coba lagi saat koneksi stabil.")
+                )
             }
 
             val jsonResponse = JSONObject(responseString)
@@ -192,14 +194,17 @@ class GeminiScheduleVisionService {
             val textOutput = parts?.getJSONObject(0)?.optString("text") ?: ""
 
             val parsedResult = parseJsonToScanResult(textOutput, targetUserClass)
+                ?: return@withContext Result.failure(
+                    IllegalStateException("Format jadwal dari AI tidak valid. Foto tidak disimpan.")
+                )
             Result.success(parsedResult)
         } catch (e: Exception) {
             Log.e("GeminiVision", "Failed to extract schedule", e)
-            Result.success(generateFallbackScanResult(targetUserClass))
+            Result.failure(e)
         }
     }
 
-    private fun parseJsonToScanResult(rawJson: String, targetUserClass: String?): ScheduleScanResult {
+    private fun parseJsonToScanResult(rawJson: String, targetUserClass: String?): ScheduleScanResult? {
         try {
             var cleanJson = rawJson.trim()
             if (cleanJson.startsWith("```json")) {
@@ -258,7 +263,7 @@ class GeminiScheduleVisionService {
             Log.e("GeminiVision", "Error parsing schedule json", e)
         }
 
-        return generateFallbackScanResult(targetUserClass)
+        return null
     }
 
     private fun parseItemsArray(jsonArray: JSONArray, className: String): List<ExtractedScheduleItem> {
@@ -357,73 +362,15 @@ class GeminiScheduleVisionService {
         return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
     }
 
-    /**
-     * Fallback scan result: demonstrates both single and multi-class filtering logic
-     * seamlessly even when offline or before setting custom Gemini API keys!
-     */
     fun generateFallbackScanResult(targetClass: String?): ScheduleScanResult {
-        val availableClasses = listOf("X IPA 1", "X IPA 2", "X IPS 1", "XI MIPA 1")
-        val cleanTarget = targetClass?.trim()?.uppercase() ?: ""
-
-        val isMultiClass = true
-        val matched = availableClasses.firstOrNull {
-            it.uppercase().replace(" ", "").contains(cleanTarget.replace(" ", "")) ||
-            cleanTarget.replace(" ", "").contains(it.uppercase().replace(" ", ""))
-        }
-
-        if (cleanTarget.isNotBlank() && matched == null) {
-            // Target class was not found in detected classes!
-            return ScheduleScanResult(
-                isMultiClass = true,
-                detectedClasses = availableClasses,
-                targetClass = targetClass,
-                targetClassFound = false,
-                matchedClass = "",
-                detectionNote = "Jadwal gabungan banyak kelas terdeteksi (4 kelas), tetapi kelas \"$targetClass\" tidak tercantum di tabel foto.",
-                items = emptyList()
-            )
-        }
-
-        val effectiveClass = matched ?: "X IPA 2"
-
-        val classSpecificItems = when (effectiveClass) {
-            "X IPA 1" -> listOf(
-                ExtractedScheduleItem(1, "Senin", "07:15", "08:45", "Kimia Terapan", "Lab Kimia • Pak Dani", false, "#2DD4BF", effectiveClass),
-                ExtractedScheduleItem(1, "Senin", "08:45", "10:15", "Matematika Minat", "Ruang 10 • Bu Rini", false, "#38BDF8", effectiveClass),
-                ExtractedScheduleItem(1, "Senin", "10:15", "10:45", "Istirahat", "Kantin", true, "#F59E0B", effectiveClass),
-                ExtractedScheduleItem(1, "Senin", "10:45", "12:15", "Bahasa Inggris", "Ruang 10 • Mr. John", false, "#F472B6", effectiveClass),
-                ExtractedScheduleItem(2, "Selasa", "07:15", "08:45", "Biologi Sel", "Lab Biologi • Bu Ratna", false, "#34D399", effectiveClass),
-                ExtractedScheduleItem(2, "Selasa", "08:45", "09:30", "Istirahat", "Kantin", true, "#F59E0B", effectiveClass),
-                ExtractedScheduleItem(2, "Selasa", "09:30", "11:00", "Fisika Mekanika", "Lab Fisika • Pak Wahyu", false, "#38BDF8", effectiveClass)
-            )
-            "X IPS 1" -> listOf(
-                ExtractedScheduleItem(1, "Senin", "07:15", "08:45", "Sosiologi", "Ruang 14 • Pak Rudi", false, "#FBBF24", effectiveClass),
-                ExtractedScheduleItem(1, "Senin", "08:45", "10:15", "Ekonomi Makro", "Ruang 14 • Bu Maya", false, "#34D399", effectiveClass),
-                ExtractedScheduleItem(1, "Senin", "10:15", "10:45", "Istirahat", "Kantin", true, "#F59E0B", effectiveClass),
-                ExtractedScheduleItem(1, "Senin", "10:45", "12:15", "Geografi Wilayah", "Ruang 14 • Pak Doni", false, "#818CF8", effectiveClass),
-                ExtractedScheduleItem(2, "Selasa", "07:15", "08:45", "Sejarah Peminatan", "Ruang 14 • Bu Endang", false, "#E879F9", effectiveClass),
-                ExtractedScheduleItem(2, "Selasa", "08:45", "09:30", "Istirahat", "Kantin", true, "#F59E0B", effectiveClass),
-                ExtractedScheduleItem(2, "Selasa", "09:30", "11:00", "Bahasa Indonesia", "Ruang 14 • Bu Siti", false, "#A78BFA", effectiveClass)
-            )
-            else -> listOf(
-                ExtractedScheduleItem(1, "Senin", "07:15", "08:45", "Fisika Modern", "Lab Fisika • Bu Dewi", false, "#34D399", effectiveClass),
-                ExtractedScheduleItem(1, "Senin", "08:45", "10:15", "Matematika Peminatan", "Ruang 12 • Pak Bambang", false, "#38BDF8", effectiveClass),
-                ExtractedScheduleItem(1, "Senin", "10:15", "10:45", "Istirahat", "Kantin", true, "#F59E0B", effectiveClass),
-                ExtractedScheduleItem(1, "Senin", "10:45", "12:15", "Bahasa Inggris Lanjutan", "Ruang 12 • Mr. John", false, "#F472B6", effectiveClass),
-                ExtractedScheduleItem(2, "Selasa", "07:15", "08:45", "Biologi Genetika", "Lab Biologi • Bu Ratna", false, "#34D399", effectiveClass),
-                ExtractedScheduleItem(2, "Selasa", "08:45", "09:30", "Istirahat", "Kantin", true, "#F59E0B", effectiveClass),
-                ExtractedScheduleItem(2, "Selasa", "09:30", "11:00", "Kimia Larutan", "Lab Kimia • Pak Dani", false, "#2DD4BF", effectiveClass)
-            )
-        }
-
         return ScheduleScanResult(
-            isMultiClass = isMultiClass,
-            detectedClasses = availableClasses,
-            targetClass = targetClass ?: effectiveClass,
-            targetClassFound = true,
-            matchedClass = effectiveClass,
-            detectionNote = "Tabel jadwal master multi-kelas terdeteksi (4 kelas). Berhasil difilter khusus untuk kelas $effectiveClass.",
-            items = classSpecificItems
+            isMultiClass = false,
+            detectedClasses = emptyList(),
+            targetClass = targetClass,
+            targetClassFound = false,
+            matchedClass = "",
+            detectionNote = "Tidak ada hasil scan asli yang tersedia.",
+            items = emptyList()
         )
     }
 }
