@@ -83,6 +83,10 @@ fun QuickAddBottomSheet(
     var selectedLocationTrigger by remember { mutableStateOf("ENTER") }
 
     val now = Calendar.getInstance()
+    val limaMenitLagi = Calendar.getInstance().apply {
+        add(Calendar.MINUTE, 5)
+    }.timeInMillis
+
     val nantiSore = Calendar.getInstance().apply {
         set(Calendar.HOUR_OF_DAY, 17); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0)
         if (timeInMillis <= now.timeInMillis) add(Calendar.DAY_OF_YEAR, 1)
@@ -104,7 +108,7 @@ fun QuickAddBottomSheet(
     }.timeInMillis
 
     var deadlineMillis by remember { mutableLongStateOf(besokPagi) }
-    var selectedPresetIndex by remember { mutableIntStateOf(2) }
+    var selectedPresetIndex by remember { mutableIntStateOf(3) }
 
     val subjects = listOf("Umum", "Matematika", "IPA", "IPS", "B. Indonesia", "B. Inggris", "Belanja")
     val durationOptions = listOf(15, 30, 45, 60)
@@ -244,6 +248,7 @@ fun QuickAddBottomSheet(
             )
             Spacer(modifier = Modifier.height(6.dp))
             val deadlineOptions = listOf(
+                Pair("5 Menit", limaMenitLagi),
                 Pair("Sore (17:00)", nantiSore),
                 Pair("Malam (20:00)", malamIni),
                 Pair("Besok Pagi (08:00)", besokPagi),
