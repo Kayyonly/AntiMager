@@ -40,6 +40,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,9 +51,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.example.data.repository.AppBlockerManager
 import com.example.ui.activity.AppBlockerOverlayActivity
 import com.example.ui.activity.VoiceActionActivity
@@ -91,6 +95,19 @@ fun LocationAndSettingsScreen(
     // Geofencing States
     var isGeofenceActive by remember { mutableStateOf(LocationReminderManager.isGeofencingActive(context)) }
     var locationConfigVersion by remember { mutableStateOf(0) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isAccessibilityActive = AppBlockerManager.isAccessibilityServiceEnabled(context)
+                isBlockerActive = AppBlockerManager.isBlockerEnabled(context)
+                isGeofenceActive = LocationReminderManager.isGeofencingActive(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     LazyColumn(
         modifier = modifier
@@ -245,7 +262,7 @@ fun LocationAndSettingsScreen(
                     Spacer(modifier = Modifier.height(14.dp))
 
                     // Accessibility Service Status Banner
-                    val isServiceOn = AppBlockerManager.isAccessibilityServiceEnabled(context)
+                    val isServiceOn = isAccessibilityActive
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
