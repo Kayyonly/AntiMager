@@ -108,6 +108,11 @@
                 android:resource="@xml/antimager_widget_info" />
         </receiver>
 
+        <!-- Scheduled task reminder receiver -->
+        <receiver
+            android:name=".receiver.TaskReminderReceiver"
+            android:exported="false" />
+
         <!-- Notification Actions Receiver -->
         <receiver
             android:name=".receiver.ReminderActionReceiver"
