@@ -42,8 +42,6 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "antimager_database.db"
                 )
-                    .addCallback(DatabaseCallback())
-                    .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance
                 instance
