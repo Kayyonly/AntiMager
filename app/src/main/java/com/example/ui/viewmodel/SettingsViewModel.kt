@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class SettingsUiState(
-    val userClass: String = "X IPA 2",
+    val userClass: String = "",
     val studentName: String = "",
     val schoolName: String = "",
     val autoFilterClassSchedule: Boolean = true,
@@ -72,7 +72,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             val currentState = _uiState.value
             val entity = UserSettingsEntity(
                 id = 1,
-                userClass = currentState.userClass.trim().ifBlank { "X IPA 2" },
+                userClass = currentState.userClass.trim(),
                 studentName = currentState.studentName.trim(),
                 schoolName = currentState.schoolName.trim(),
                 autoFilterClassSchedule = currentState.autoFilterClassSchedule
