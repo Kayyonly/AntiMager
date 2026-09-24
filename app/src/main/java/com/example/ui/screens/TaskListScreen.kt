@@ -368,7 +368,7 @@ fun TaskListScreen(
         if (showQuickAddSheet) {
             QuickAddBottomSheet(
                 onDismiss = { showQuickAddSheet = false },
-                onAddTask = { title, subject, desc, deadline, duration, priority, isPersistent, location ->
+                onAddTask = { title, subject, desc, deadline, duration, priority, isPersistent, location, locationTrigger ->
                     viewModel.addTask(
                         title = title,
                         subject = subject,
@@ -377,7 +377,8 @@ fun TaskListScreen(
                         estimatedMinutes = duration,
                         priority = priority,
                         isPersistent = isPersistent,
-                        locationName = location
+                        locationName = location,
+                        locationTrigger = locationTrigger
                     )
                     showQuickAddSheet = false
                     Toast.makeText(context, "Tugas berhasil ditambahkan", Toast.LENGTH_SHORT).show()
