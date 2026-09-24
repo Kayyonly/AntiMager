@@ -90,9 +90,9 @@ fun SettingsScreen(
     }
 
     val quickClasses = listOf(
-        "X IPA 1", "X IPA 2", "X IPS 1", "X IPS 2",
-        "XI MIPA 1", "XI MIPA 2", "XI IPS 1", "XII MIPA 1",
-        "7A", "7B", "8A", "8B", "9A", "9B"
+        "VII.1", "VII.2", "VII.3", "VII.4",
+        "VIII.1", "VIII.2", "VIII.3", "VIII.4",
+        "IX.1", "IX.2", "IX.3", "IX.4", "IX.5", "IX.6", "IX.7", "IX.8", "IX.9"
     )
 
     Column(
@@ -193,7 +193,7 @@ fun SettingsScreen(
                 OutlinedTextField(
                     value = uiState.userClass,
                     onValueChange = { viewModel.onClassChange(it) },
-                    placeholder = { Text("Contoh: X IPA 2 atau XI MIPA 1", color = AppleTextPlaceholder, fontSize = 14.sp) },
+                    placeholder = { Text("Contoh: IX.7 atau X IPA 2", color = AppleTextPlaceholder, fontSize = 14.sp) },
                     label = { Text("Nama Kelas Kamu", fontSize = 12.sp) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(LiquidGlassTokens.RadiusInput),
