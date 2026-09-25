@@ -216,9 +216,9 @@ fun QuickAddBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = Color(0xF210131A),
-        scrimColor = Color.Black.copy(alpha = 0.72f),
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = Color(0xE814171D),
+        scrimColor = Color.Black.copy(alpha = 0.58f),
         dragHandle = {
             Box(
                 modifier = Modifier
@@ -226,7 +226,7 @@ fun QuickAddBottomSheet(
                     .width(40.dp)
                     .height(4.5.dp)
                     .clip(CircleShape)
-                    .background(Color(0x35FFFFFF))
+                    .background(Color(0x4AFFFFFF))
             )
         }
     ) {
@@ -253,7 +253,7 @@ fun QuickAddBottomSheet(
                         letterSpacing = (-0.4).sp
                     )
                     Text(
-                        text = "Jadwalkan tugas atau pengingat harian",
+                        text = "Cepat, sederhana, dan langsung tersimpan",
                         fontSize = 12.sp,
                         color = AppleTextSecondary
                     )
@@ -282,7 +282,7 @@ fun QuickAddBottomSheet(
             // SECTION 1: Judul & Catatan (iOS Liquid Glass Inset Card)
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 elevation = 2.dp
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -338,7 +338,7 @@ fun QuickAddBottomSheet(
             // SECTION 2: Kategori / Mapel (Comprehensive Preset + Custom Input)
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 elevation = 2.dp
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -503,7 +503,7 @@ fun QuickAddBottomSheet(
             // SECTION 3: Tenggat Waktu (Quick Presets + DatePicker & TimePicker)
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 elevation = 2.dp
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -658,7 +658,7 @@ fun QuickAddBottomSheet(
             // SECTION 4: Prioritas & Durasi
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 elevation = 2.dp
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -768,7 +768,7 @@ fun QuickAddBottomSheet(
             // SECTION 5: Lokasi & Notifikasi Shade
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 elevation = 2.dp
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -837,13 +837,13 @@ fun QuickAddBottomSheet(
                     ) {
                         Column {
                             Text(
-                                text = "Pengingat Anti-Mager (Persistent)",
+                                text = "Tetap tampil di notifikasi",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = AppleTextPrimary
                             )
                             Text(
-                                text = "Menetap di tirai notifikasi sampai selesai",
+                                text = "Notifikasi tetap ada sampai tugas selesai atau ditunda",
                                 fontSize = 11.sp,
                                 color = AppleTextSecondary
                             )
