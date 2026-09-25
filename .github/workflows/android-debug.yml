@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - liquid-glass-redesign
 
 jobs:
   build-debug:
