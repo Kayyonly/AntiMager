@@ -239,13 +239,13 @@ fun TaskListScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Smart Priority: Quiet Native Row (No neon gradients, no Gemini advertising)
+            // Smart Priority: Quiet Native Row (No neon gradients, no model advertising)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xFF141416))
-                    .clickable { viewModel.triggerGeminiAiSort() }
+                    .clickable { viewModel.triggerGroqAiSort() }
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
