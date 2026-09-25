@@ -4,6 +4,7 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,11 +44,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.GlassCard
 import com.example.ui.components.IosSegmentedControl
 import com.example.ui.components.LiquidGlassTokens
 import com.example.ui.components.QuickAddBottomSheet
@@ -87,9 +90,7 @@ fun TaskListScreen(
     }
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(LiquidDarkBackground)
+        modifier = modifier.fillMaxSize()
     ) {
         Column(
             modifier = Modifier
@@ -153,136 +154,150 @@ fun TaskListScreen(
             AnimatedVisibility(visible = showSearchBar) {
                 Column {
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = uiState.searchQuery,
-                        onValueChange = { viewModel.setSearchQuery(it) },
-                        placeholder = { Text("Cari judul, mapel, atau lokasi...", fontSize = 14.sp, color = AppleTextPlaceholder) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = AppleSystemBlue,
-                            unfocusedBorderColor = Color.Transparent,
-                            focusedContainerColor = Color(0xFF1C1C1E),
-                            unfocusedContainerColor = Color(0xFF1C1C1E),
-                            focusedTextColor = AppleTextPrimary,
-                            unfocusedTextColor = AppleTextPrimary
-                        ),
-                        trailingIcon = {
-                            if (uiState.searchQuery.isNotBlank()) {
-                                IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Clear", tint = AppleTextSecondary, modifier = Modifier.size(16.dp))
+                    GlassCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        elevation = 2.dp
+                    ) {
+                        OutlinedTextField(
+                            value = uiState.searchQuery,
+                            onValueChange = { viewModel.setSearchQuery(it) },
+                            placeholder = { Text("Cari judul, mapel, atau lokasi...", fontSize = 14.sp, color = AppleTextPlaceholder) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppleSystemBlue,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedTextColor = AppleTextPrimary,
+                                unfocusedTextColor = AppleTextPrimary
+                            ),
+                            trailingIcon = {
+                                if (uiState.searchQuery.isNotBlank()) {
+                                    IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Clear", tint = AppleTextSecondary, modifier = Modifier.size(16.dp))
+                                    }
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Quiet Native Status Summary (No heavy bordered boxes)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF141416))
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            // iOS 26 Liquid Glass Status Summary Card
+            GlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                elevation = 3.dp
             ) {
-                Column {
-                    Text(
-                        text = "BELUM SELESAI",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppleTextSecondary,
-                        letterSpacing = 0.4.sp
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "${uiState.totalPending}",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AppleSystemBlue,
-                        letterSpacing = (-0.4).sp
-                    )
-                }
-
-                Box(
+                Row(
                     modifier = Modifier
-                        .width(1.dp)
-                        .height(30.dp)
-                        .background(GlassBorderSubtle)
-                )
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "BELUM SELESAI",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppleTextSecondary,
+                            letterSpacing = 0.5.sp
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = "${uiState.totalPending}",
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AppleSystemBlue,
+                            letterSpacing = (-0.5).sp
+                        )
+                    }
 
-                Column {
-                    Text(
-                        text = "MENDESAK",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppleTextSecondary,
-                        letterSpacing = 0.4.sp
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(32.dp)
+                            .background(GlassBorderSubtle)
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "${uiState.urgentCount}",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (uiState.urgentCount > 0) AppleSystemRed else AppleTextPrimary,
-                        letterSpacing = (-0.4).sp
-                    )
+
+                    Column {
+                        Text(
+                            text = "MENDESAK",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppleTextSecondary,
+                            letterSpacing = 0.5.sp
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = "${uiState.urgentCount}",
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (uiState.urgentCount > 0) AppleSystemRed else AppleTextPrimary,
+                            letterSpacing = (-0.5).sp
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Smart Priority: Quiet Native Row (No neon gradients, no Gemini advertising)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF141416))
-                    .clickable { viewModel.triggerGeminiAiSort() }
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            // Smart Priority: Liquid Glass Interactive Card
+            GlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                elevation = 2.dp,
+                onClick = { viewModel.triggerGeminiAiSort() }
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Smart Priority",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppleTextPrimary
-                    )
-                    Spacer(modifier = Modifier.height(1.dp))
-                    Text(
-                        text = if (uiState.isAiSortingLoading) "Menganalisis urgensi tugas..." else (uiState.aiGlobalAdvice ?: "Ketuk untuk menyortir urutan fokus"),
-                        fontSize = 12.sp,
-                        color = AppleTextSecondary,
-                        maxLines = 1
-                    )
-                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Smart Priority",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppleTextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (uiState.isAiSortingLoading) "Menganalisis urgensi tugas..." else (uiState.aiGlobalAdvice ?: "Ketuk untuk menyortir urutan fokus"),
+                            fontSize = 12.sp,
+                            color = AppleTextSecondary,
+                            maxLines = 1
+                        )
+                    }
 
-                if (uiState.isAiSortingLoading) {
-                    CircularProgressIndicator(
-                        color = AppleSystemBlue,
-                        strokeWidth = 2.dp,
-                        modifier = Modifier.size(16.dp)
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Urutkan Prioritas",
-                        tint = AppleTextSecondary,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    if (uiState.isAiSortingLoading) {
+                        CircularProgressIndicator(
+                            color = AppleSystemBlue,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Urutkan Prioritas",
+                            tint = AppleTextSecondary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // iOS Native Segmented Control
             IosSegmentedControl(
@@ -292,14 +307,15 @@ fun TaskListScreen(
                 itemLabel = { it.label }
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Task List (Apple Reminders flat list style)
+            // Task List (Apple Reminders Liquid Glass Cards)
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                contentPadding = PaddingValues(bottom = 90.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(top = 2.dp, bottom = 100.dp)
             ) {
                 if (uiState.tasks.isEmpty()) {
                     item {
@@ -346,20 +362,37 @@ fun TaskListScreen(
             }
         }
 
-        // Native Refined FAB (Bottom Right)
-        FloatingActionButton(
-            onClick = { showQuickAddSheet = true },
+        // Liquid Glass Floating Action Button
+        Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(bottom = 24.dp, end = 20.dp)
-                .size(50.dp),
-            containerColor = AppleSystemBlue,
-            contentColor = Color.White,
-            shape = CircleShape
+                .padding(bottom = 85.dp, end = 20.dp)
+                .size(54.dp)
+                .shadow(
+                    elevation = 6.dp,
+                    shape = CircleShape,
+                    spotColor = Color(0x45000000)
+                )
+                .clip(CircleShape)
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        listOf(Color(0xFF0A84FF), Color(0xFF0071E3))
+                    )
+                )
+                .border(
+                    width = 0.85.dp,
+                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                        listOf(Color(0x80FFFFFF), Color(0x20FFFFFF))
+                    ),
+                    shape = CircleShape
+                )
+                .clickable { showQuickAddSheet = true },
+            contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Tambah Tugas",
+                tint = Color.White,
                 modifier = Modifier.size(24.dp)
             )
         }

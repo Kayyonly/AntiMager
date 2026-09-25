@@ -32,12 +32,75 @@ object WhatsAppShareHelper {
         }
     }
 
+    fun formatDailySummaryMessage(tasks: List<TaskEntity>): String {
+        val sdf = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.forLanguageTag("id-ID"))
+        val todayStr = sdf.format(Date())
+        val (completed, pending) = tasks.partition { it.isCompleted }
+
+        return buildString {
+            append("📋 *RINGKASAN TUGAS HARIAN ANTI-MAGER*\n")
+            append("📅 *$todayStr*\n\n")
+            append("📊 Total: ${tasks.size} | Tertunda: ${pending.size} | Selesai: ${completed.size}\n\n")
+
+            if (pending.isNotEmpty()) {
+                append("⏳ *Tugas Yang Harus Dibereskan:*\n")
+                pending.forEachIndexed { index, t ->
+                    val timeSdf = SimpleDateFormat("HH:mm", Locale.forLanguageTag("id-ID"))
+                    val timeStr = timeSdf.format(Date(t.deadlineEpochMillis))
+                    append("${index + 1}. [ ] *${t.title}* (${t.subject}) - Deadline: $timeStr\n")
+                }
+                append("\n")
+            }
+
+            if (completed.isNotEmpty()) {
+                append("✅ *Tugas Sudah Selesai:*\n")
+                completed.forEachIndexed { index, t ->
+                    append("${index + 1}. [✓] ~${t.title}~ (${t.subject})\n")
+                }
+                append("\n")
+            }
+
+            append("_AntiMager: Bangun dan selesaikan, jangan biarkan prokrastinasi menang!_ 💪⚡")
+        }
+    }
+
+    fun formatChecklistMessage(tasks: List<TaskEntity>): String {
+        val sdf = SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("id-ID"))
+        val todayStr = sdf.format(Date())
+
+        return buildString {
+            append("✅ *CHECKLIST TUGAS AKADEMIS ($todayStr)*\n\n")
+            tasks.forEach { t ->
+                val status = if (t.isCompleted) "[✓] Selesai" else "[ ] Belum"
+                append("$status • *${t.title}* [${t.subject}]\n")
+                if (t.description.isNotBlank()) {
+                    append("   ↳ ${t.description}\n")
+                }
+            }
+            append("\n_Dibuat dengan AntiMager App_ 📱")
+        }
+    }
+
     fun shareTask(context: Context, task: TaskEntity) {
-        shareToWhatsApp(context, task)
+        val message = formatShareMessage(task)
+        sendShareIntent(context, message, "Bagikan Pengingat via:")
     }
 
     fun shareToWhatsApp(context: Context, task: TaskEntity) {
-        val message = formatShareMessage(task)
+        shareTask(context, task)
+    }
+
+    fun shareDailySummary(context: Context, tasks: List<TaskEntity>) {
+        val message = formatDailySummaryMessage(tasks)
+        sendShareIntent(context, message, "Bagikan Ringkasan Harian:")
+    }
+
+    fun shareChecklist(context: Context, tasks: List<TaskEntity>) {
+        val message = formatChecklistMessage(tasks)
+        sendShareIntent(context, message, "Bagikan Checklist Tugas:")
+    }
+
+    private fun sendShareIntent(context: Context, message: String, chooserTitle: String) {
         val sendIntent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, message)
@@ -47,11 +110,11 @@ object WhatsAppShareHelper {
             sendIntent.setPackage("com.whatsapp")
             context.startActivity(sendIntent)
         } catch (e: ActivityNotFoundException) {
-            // Jika WhatsApp tidak terpasang (misal di emulator), buka app chooser umum
             try {
                 sendIntent.setPackage(null)
-                val chooser = Intent.createChooser(sendIntent, "Bagikan Pengingat via:")
-                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                val chooser = Intent.createChooser(sendIntent, chooserTitle).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
                 context.startActivity(chooser)
             } catch (ex: Exception) {
                 Toast.makeText(context, "Tidak ada aplikasi untuk membagikan pesan", Toast.LENGTH_SHORT).show()

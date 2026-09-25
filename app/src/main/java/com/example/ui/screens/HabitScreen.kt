@@ -85,9 +85,7 @@ fun HabitScreen(
     val todayEpochDay = remember { System.currentTimeMillis() / (1000 * 60 * 60 * 24) }
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(LiquidDarkBackground)
+        modifier = modifier.fillMaxSize()
     ) {
         Column(
             modifier = Modifier

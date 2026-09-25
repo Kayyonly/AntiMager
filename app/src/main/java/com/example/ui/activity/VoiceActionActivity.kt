@@ -115,7 +115,7 @@ private fun VoiceActionScreen(
             val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull() ?: ""
             if (spoken.isNotBlank()) {
                 transcribedText = spoken
-                statusMessage = "Menganalisis dengan Gemini AI..."
+                statusMessage = "Menganalisis tugas dengan AI..."
                 isProcessing = true
 
                 coroutineScope.launch {

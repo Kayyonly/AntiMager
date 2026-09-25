@@ -94,7 +94,6 @@ fun LocationAndSettingsScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(IosSystemBackground)
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)

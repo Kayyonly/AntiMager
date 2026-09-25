@@ -41,15 +41,15 @@ object AiTaskParserService {
         .build()
 
     /**
-     * Gemini 3.5 Flash natural language parser with structured fallback
+     * Groq (Llama 3.3 70B) natural language parser with structured fallback
      */
     suspend fun parseWithExternalApi(userStory: String, conversationContext: String? = null): ParsedTaskResult? = withContext(Dispatchers.IO) {
         val apiKey = try {
-            BuildConfig.GEMINI_API_KEY
+            BuildConfig.GROQ_API_KEY
         } catch (e: Exception) {
             ""
         }
-        if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") return@withContext null
+        if (apiKey.isBlank() || apiKey == "MY_GROQ_API_KEY") return@withContext null
 
         try {
             val sdf = SimpleDateFormat("EEEE, dd MMMM yyyy HH:mm", Locale("id", "ID"))
@@ -59,12 +59,10 @@ object AiTaskParserService {
                 "Konteks pesan sebelumnya dari percakapan: \"$conversationContext\"."
             } else ""
 
-            val prompt = """
+            val systemPrompt = """
                 Kamu adalah parser tugas AntiMager AI berbahasa Indonesia.
                 Waktu sekarang: $nowStr (WIB).
                 $contextNote
-                
-                Input pengguna: "$userStory"
                 
                 Instruksi:
                 1. Jika input SANGAT AMBIGU (contoh: "besok kerjain tugas", "nanti ingetin tugas", "ada tugas besok") dan nama/judul tugas TIDAK DISEBUTKAN:
@@ -94,34 +92,57 @@ object AiTaskParserService {
                 }
             """.trimIndent()
 
-            val requestJson = JSONObject().apply {
-                val contents = JSONArray().apply {
-                    put(JSONObject().apply {
-                        put("parts", JSONArray().apply {
-                            put(JSONObject().apply { put("text", prompt) })
+            val candidateModels = GroqModelManager.getCandidateModels()
+            var body: String? = null
+
+            for (candidate in candidateModels) {
+                val requestJson = JSONObject().apply {
+                    put("model", candidate)
+                    val messagesArray = JSONArray().apply {
+                        put(JSONObject().apply {
+                            put("role", "system")
+                            put("content", systemPrompt)
                         })
+                        put(JSONObject().apply {
+                            put("role", "user")
+                            put("content", userStory)
+                        })
+                    }
+                    put("messages", messagesArray)
+                    put("response_format", JSONObject().apply {
+                        put("type", "json_object")
                     })
-                }
-                put("contents", contents)
-                put("generationConfig", JSONObject().apply {
-                    put("responseMimeType", "application/json")
                     put("temperature", 0.1)
-                })
+                }
+
+                val request = Request.Builder()
+                    .url("https://api.groq.com/openai/v1/chat/completions")
+                    .header("Authorization", "Bearer $apiKey")
+                    .post(requestJson.toString().toRequestBody("application/json".toMediaType()))
+                    .build()
+
+                val response = httpClient.newCall(request).execute()
+                val responseStr = response.body?.string() ?: ""
+
+                if (response.isSuccessful) {
+                    body = responseStr
+                    GroqModelManager.markModelWorking(candidate)
+                    break
+                } else {
+                    Log.w(TAG, "Groq model $candidate error ${response.code}: $responseStr")
+                    if (response.code == 404 || responseStr.contains("model_not_found") || responseStr.contains("does not exist")) {
+                        continue
+                    } else {
+                        return@withContext null
+                    }
+                }
             }
 
-            val request = Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=$apiKey")
-                .post(requestJson.toString().toRequestBody("application/json".toMediaType()))
-                .build()
-
-            val response = httpClient.newCall(request).execute()
-            if (!response.isSuccessful) return@withContext null
-
-            val body = response.body?.string() ?: return@withContext null
+            if (body == null) return@withContext null
             val root = JSONObject(body)
-            val text = root.optJSONArray("candidates")?.optJSONObject(0)
-                ?.optJSONObject("content")?.optJSONArray("parts")?.optJSONObject(0)
-                ?.optString("text") ?: return@withContext null
+            val choices = root.optJSONArray("choices") ?: return@withContext null
+            if (choices.length() == 0) return@withContext null
+            val text = choices.getJSONObject(0).optJSONObject("message")?.optString("content") ?: return@withContext null
 
             val parsed = JSONObject(text)
             val isAmbiguous = parsed.optBoolean("isAmbiguous", false)

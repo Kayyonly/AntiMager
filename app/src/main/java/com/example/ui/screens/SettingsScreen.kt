@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mic
@@ -98,7 +99,6 @@ fun SettingsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(LiquidDarkBackground)
             .padding(horizontal = 16.dp)
             .verticalScroll(rememberScrollState())
     ) {
@@ -286,10 +286,47 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(18.dp))
 
         // SECTION 2: AI & ENGINE INTEGRATION
-        IosSectionHeader(title = "AI Intelligence Engine")
+        IosSectionHeader(title = "Dual AI Intelligence Engine")
 
         GlassCard(elevation = 2.dp) {
             Column(modifier = Modifier.padding(16.dp)) {
+                // Provider 1: Groq Llama 3.3 70B
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color(0x22F97316))
+                            .border(0.8.dp, Color(0xFFF97316).copy(alpha = 0.5f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Bolt,
+                            contentDescription = null,
+                            tint = Color(0xFFF97316),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Groq (Llama 3.3 70B)",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppleTextPrimary,
+                            letterSpacing = (-0.2).sp
+                        )
+                        Text(
+                            text = "Mesin teks ultra-cepat: AI Chat, Parser & Smart Priority",
+                            fontSize = 12.sp,
+                            color = AppleTextSecondary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Provider 2: Google Gemini Vision
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
@@ -309,14 +346,14 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Google Gemini 3.5 Flash",
+                            text = "Google Gemini (Vision)",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = AppleTextPrimary,
                             letterSpacing = (-0.2).sp
                         )
                         Text(
-                            text = "Model aktif untuk analisis bahasa & visual scan",
+                            text = "Mesin visual: Scan foto jadwal pelajaran sekolah",
                             fontSize = 12.sp,
                             color = AppleTextSecondary
                         )
@@ -399,7 +436,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Smart Priority Sorting", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = AppleTextPrimary)
-                        Text("Gemini 3.5 Flash API + reasoning rationale", fontSize = 11.sp, color = AppleTextSecondary)
+                        Text("Groq Llama 3.3 70B + reasoning rationale", fontSize = 11.sp, color = AppleTextSecondary)
                     }
                     Box(
                         modifier = Modifier
