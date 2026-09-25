@@ -54,6 +54,7 @@ import com.example.data.local.entity.HabitEntity
 import com.example.ui.components.GlassButton
 import com.example.ui.components.GlassButtonVariant
 import com.example.ui.components.GlassCard
+import com.example.ui.components.GlassIconButton
 import com.example.ui.components.LiquidGlassTokens
 import com.example.ui.theme.AppleSystemBlue
 import com.example.ui.theme.AppleSystemGreen
@@ -102,112 +103,85 @@ fun HabitScreen(
             ) {
                 Column {
                     Text(
-                        text = "RUTINITAS POSITIF",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppleTextSecondary,
-                        letterSpacing = 0.6.sp
+                        text = "Hari ini",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = AppleTextSecondary
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(1.dp))
                     Text(
-                        text = "Habit Streak",
-                        fontSize = 30.sp,
+                        text = "Kebiasaan",
+                        fontSize = 34.sp,
                         fontWeight = FontWeight.Bold,
                         color = AppleTextPrimary,
-                        letterSpacing = (-0.6).sp
+                        letterSpacing = (-0.8).sp
                     )
                 }
 
-                // Add button (Liquid Glass primary circle)
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(AppleSystemBlue)
-                        .clickable { showAddDialog = true },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Tambah Habit",
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
+                GlassIconButton(
+                    icon = Icons.Default.Add,
+                    contentDescription = "Tambah kebiasaan",
+                    onClick = { showAddDialog = true },
+                    tint = AppleSystemBlue,
+                    containerColor = Color(0x1FFFFFFF)
+                )
             }
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Overview Stats (3 Apple Health style inset cards with Liquid Glass depth)
-            Row(
+            // Compact Health-style overview in one continuous glass panel.
+            GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                shape = RoundedCornerShape(22.dp),
+                elevation = 4.dp
             ) {
-                GlassCard(modifier = Modifier.weight(1f), elevation = 1.5.dp) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(text = "🔥", fontSize = 22.sp)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "${uiState.totalActiveStreaks}",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = AppleSystemOrange
-                        )
-                        Text(
-                            text = "Streak Aktif",
-                            fontSize = 10.sp,
-                            color = AppleTextSecondary
-                        )
-                    }
-                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 15.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    HabitStat(
+                        icon = Icons.Default.LocalFireDepartment,
+                        value = uiState.totalActiveStreaks.toString(),
+                        label = "Aktif",
+                        accent = AppleSystemOrange,
+                        modifier = Modifier.weight(1f)
+                    )
 
-                GlassCard(modifier = Modifier.weight(1f), elevation = 1.5.dp) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(text = "🏆", fontSize = 22.sp)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "${uiState.bestStreakOverall} Hari",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = AppleSystemIndigo
-                        )
-                        Text(
-                            text = "Rekor Terbaik",
-                            fontSize = 10.sp,
-                            color = AppleTextSecondary
-                        )
-                    }
-                }
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(46.dp)
+                            .background(Color(0x20FFFFFF))
+                    )
 
-                GlassCard(modifier = Modifier.weight(1f), elevation = 1.5.dp) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(text = "✅", fontSize = 22.sp)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "${uiState.todayCompletedCount}/${uiState.habits.size}",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = AppleSystemGreen
-                        )
-                        Text(
-                            text = "Hari Ini",
-                            fontSize = 10.sp,
-                            color = AppleTextSecondary
-                        )
-                    }
+                    HabitStat(
+                        icon = Icons.Default.Bolt,
+                        value = "${uiState.bestStreakOverall} hari",
+                        label = "Rekor",
+                        accent = AppleSystemIndigo,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(46.dp)
+                            .background(Color(0x20FFFFFF))
+                    )
+
+                    HabitStat(
+                        icon = Icons.Default.Check,
+                        value = "${uiState.todayCompletedCount}/${uiState.habits.size}",
+                        label = "Hari ini",
+                        accent = AppleSystemGreen,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Habits List
             LazyColumn(
@@ -272,6 +246,48 @@ fun HabitScreen(
                 viewModel.addHabit(name, desc, icon, color)
                 Toast.makeText(context, "Habit baru ditambahkan!", Toast.LENGTH_SHORT).show()
             }
+        )
+    }
+}
+
+@Composable
+private fun HabitStat(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    value: String,
+    label: String,
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(accent.copy(alpha = 0.13f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(15.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = value,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = AppleTextPrimary,
+            letterSpacing = (-0.25).sp
+        )
+        Text(
+            text = label,
+            fontSize = 10.5.sp,
+            color = AppleTextSecondary
         )
     }
 }
