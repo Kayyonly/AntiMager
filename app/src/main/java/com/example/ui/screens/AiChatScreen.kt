@@ -179,11 +179,10 @@ fun AiChatScreen(
             Column {
                 if (!isImeVisible) {
                     Text(
-                        text = "INTELLIGENCE",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppleTextSecondary,
-                        letterSpacing = 0.6.sp
+                        text = "Groq • Llama",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = AppleTextSecondary
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                 }
@@ -196,27 +195,32 @@ fun AiChatScreen(
                 )
             }
 
-            // Intelligence Engine Capsule
+            // Quiet connection capsule: glass first, provider second.
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0x18F97316))
-                    .border(0.7.dp, Color(0xFFF97316).copy(alpha = 0.45f), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0x18FFFFFF))
+                    .background(LiquidGlassTokens.GlassCardSheenBrush)
+                    .border(
+                        0.7.dp,
+                        LiquidGlassTokens.GlassSpecularBorderBrush,
+                        RoundedCornerShape(16.dp)
+                    )
+                    .padding(horizontal = 11.dp, vertical = 7.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .size(6.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF97316))
+                            .background(AppleSystemBlue)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Llama 3.3 70B (Groq)",
+                        text = "Online",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFFFB380)
+                        color = AppleTextPrimary
                     )
                 }
             }
@@ -581,9 +585,9 @@ fun AiChatScreen(
                     onValueChange = { viewModel.updateInputText(it) },
                     placeholder = { Text("Tulis tugasmu (cth: PR IPS besok)...", color = AppleTextPlaceholder, fontSize = 14.sp) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(22.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AppleSystemBlue,
+                        focusedBorderColor = Color(0x38FFFFFF),
                         unfocusedBorderColor = Color.Transparent,
                         focusedContainerColor = Color(0x18FFFFFF),
                         unfocusedContainerColor = Color(0x12FFFFFF),

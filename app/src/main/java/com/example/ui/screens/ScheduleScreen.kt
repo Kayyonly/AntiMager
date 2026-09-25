@@ -33,6 +33,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
@@ -72,6 +73,9 @@ import androidx.core.content.ContextCompat
 import com.example.data.local.entity.ScheduleEntity
 import com.example.ui.components.ClassMismatchDialog
 import com.example.ui.components.GlassCard
+import com.example.ui.components.GlassButton
+import com.example.ui.components.GlassButtonVariant
+import com.example.ui.components.GlassIconButton
 import com.example.ui.components.IosCard
 import com.example.ui.components.IosSegmentedControl
 import com.example.ui.components.ScanOptionDialog
@@ -179,16 +183,18 @@ fun ScheduleScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Jadwal Pelajaran",
-                        fontSize = 24.sp,
+                        text = "Sekolah",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = IosTextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(1.dp))
+                    Text(
+                        text = "Jadwal",
+                        fontSize = 34.sp,
                         fontWeight = FontWeight.Bold,
                         color = IosTextPrimary,
-                        letterSpacing = (-0.5).sp
-                    )
-                    Text(
-                        text = "Jadwal kelas, mapel & jam istirahat",
-                        fontSize = 12.sp,
-                        color = IosTextSecondary
+                        letterSpacing = (-0.8).sp
                     )
                 }
 
@@ -196,46 +202,21 @@ fun ScheduleScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Tombol Scan Jadwal dari Foto (Apple iOS Minimalist Style)
-                    Button(
+                    GlassButton(
+                        text = "Scan",
                         onClick = { isScanOptionOpen = true },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = IosBlue.copy(alpha = 0.12f),
-                            contentColor = IosBlue
-                        ),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                        modifier = Modifier.height(38.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CameraAlt,
-                            contentDescription = "Scan Jadwal dari Foto",
-                            tint = IosBlue,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Scan Foto",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                        icon = Icons.Default.CameraAlt,
+                        variant = GlassButtonVariant.GLASS,
+                        modifier = Modifier.height(42.dp)
+                    )
 
-                    // Add Slot Button
-                    IconButton(
+                    GlassIconButton(
+                        icon = Icons.Default.Add,
+                        contentDescription = "Tambah slot",
                         onClick = { viewModel.openAddForm() },
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(IosBlue)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Tambah Slot",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                        tint = IosBlue,
+                        containerColor = Color(0x1FFFFFFF)
+                    )
                 }
             }
 
@@ -246,7 +227,7 @@ fun ScheduleScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onOpenSettings?.invoke() },
-                elevation = 0.5.dp
+                elevation = 2.dp
             ) {
                 Row(
                     modifier = Modifier
@@ -277,7 +258,7 @@ fun ScheduleScreen(
                             color = IosTextSecondary
                         )
                         Text(
-                            text = uiState.userClass,
+                            text = uiState.userClass.ifBlank { "Belum diatur" },
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = IosBlue
@@ -286,7 +267,7 @@ fun ScheduleScreen(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Ubah di Settings",
+                            text = "Atur",
                             fontSize = 11.sp,
                             color = IosIndigo,
                             fontWeight = FontWeight.SemiBold
@@ -325,10 +306,10 @@ fun ScheduleScreen(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(14.dp))
-                            .background(if (isToday) MintAccent.copy(alpha = 0.2f) else GlassCardFill)
+                            .background(if (isToday) Color(0x260A84FF) else GlassCardFill)
                             .border(
                                 1.dp,
-                                if (isToday) MintAccent else GlassCardBorder,
+                                if (isToday) IosBlue.copy(alpha = 0.55f) else GlassCardBorder,
                                 RoundedCornerShape(14.dp)
                             )
                             .clickable { viewModel.setDailySubTab(DailySubTab.TODAY) }
@@ -340,12 +321,12 @@ fun ScheduleScreen(
                                 text = "Hari Ini",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isToday) MintAccent else TextWhitePrimary
+                                color = if (isToday) IosBlue else TextWhitePrimary
                             )
                             Text(
                                 text = currentDayName,
                                 fontSize = 11.sp,
-                                color = if (isToday) MintAccent.copy(alpha = 0.8f) else TextSecondary
+                                color = if (isToday) IosBlue.copy(alpha = 0.85f) else TextSecondary
                             )
                         }
                     }
@@ -355,10 +336,10 @@ fun ScheduleScreen(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(14.dp))
-                            .background(if (isTomorrow) LavenderAccent.copy(alpha = 0.2f) else GlassCardFill)
+                            .background(if (isTomorrow) Color(0x260A84FF) else GlassCardFill)
                             .border(
                                 1.dp,
-                                if (isTomorrow) LavenderAccent else GlassCardBorder,
+                                if (isTomorrow) IosBlue.copy(alpha = 0.55f) else GlassCardBorder,
                                 RoundedCornerShape(14.dp)
                             )
                             .clickable { viewModel.setDailySubTab(DailySubTab.TOMORROW) }
@@ -370,12 +351,12 @@ fun ScheduleScreen(
                                 text = "Besok",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isTomorrow) LavenderAccent else TextWhitePrimary
+                                color = if (isTomorrow) IosBlue else TextWhitePrimary
                             )
                             Text(
                                 text = nextDayName,
                                 fontSize = 11.sp,
-                                color = if (isTomorrow) LavenderAccent.copy(alpha = 0.8f) else TextSecondary
+                                color = if (isTomorrow) IosBlue.copy(alpha = 0.85f) else TextSecondary
                             )
                         }
                     }
@@ -403,10 +384,10 @@ fun ScheduleScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSelected) LavenderAccent.copy(alpha = 0.25f) else GlassCardFill)
+                                .background(if (isSelected) Color(0x260A84FF) else GlassCardFill)
                                 .border(
                                     1.dp,
-                                    if (isSelected) LavenderAccent else GlassCardBorder,
+                                    if (isSelected) IosBlue.copy(alpha = 0.55f) else GlassCardBorder,
                                     RoundedCornerShape(12.dp)
                                 )
                                 .clickable { viewModel.setSelectedDayOfWeek(dayInt) }
@@ -417,7 +398,7 @@ fun ScheduleScreen(
                                     text = dayStr,
                                     fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) LavenderAccent else TextWhitePrimary
+                                    color = if (isSelected) IosBlue else TextWhitePrimary
                                 )
                                 if (isCurrentDay) {
                                     Spacer(modifier = Modifier.width(4.dp))
@@ -425,7 +406,7 @@ fun ScheduleScreen(
                                         modifier = Modifier
                                             .size(6.dp)
                                             .clip(CircleShape)
-                                            .background(MintAccent)
+                                            .background(IosBlue)
                                     )
                                 }
                             }
@@ -445,8 +426,21 @@ fun ScheduleScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "🏖️", fontSize = 42.sp)
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(54.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x16FFFFFF)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = null,
+                                tint = IosTextSecondary,
+                                modifier = Modifier.size(23.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = "Tidak ada jadwal pelajaran",
                             fontSize = 16.sp,
