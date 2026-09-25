@@ -308,9 +308,8 @@ fun HabitItemCard(
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(LiquidGlassTokens.RadiusCard),
-        backgroundColor = if (isCompletedToday) Color(0xFF131317) else LiquidDarkCard.copy(alpha = 0.88f),
         borderColor = if (isCompletedToday) GlassBorderSubtle else GlassBorderStandard,
-        elevation = if (isCompletedToday) 0.5.dp else 2.dp
+        elevation = if (isCompletedToday) 1.dp else 3.dp
     ) {
         Row(
             modifier = Modifier
@@ -323,8 +322,8 @@ fun HabitItemCard(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(accentColor.copy(alpha = 0.16f))
-                    .border(1.dp, accentColor.copy(alpha = 0.35f), CircleShape),
+                    .background(Color(0x16FFFFFF))
+                    .border(0.7.dp, Color(0x2AFFFFFF), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 when (habit.iconName) {
@@ -361,9 +360,9 @@ fun HabitItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Row(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(AppleSystemOrange.copy(alpha = 0.16f))
-                            .border(0.8.dp, AppleSystemOrange.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0x12FFFFFF))
+                            .border(0.6.dp, Color(0x20FFFFFF), RoundedCornerShape(8.dp))
                             .padding(horizontal = 7.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
