@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import com.example.ui.components.GlassButton
 import com.example.ui.components.GlassButtonVariant
 import com.example.ui.components.GlassCard
+import com.example.ui.components.GlassIconButton
 import com.example.ui.components.IosSectionHeader
 import com.example.ui.components.LiquidGlassTokens
 import com.example.ui.theme.AppleSystemBlue
@@ -110,39 +111,30 @@ fun SettingsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (onBack != null) {
-                IconButton(
+                GlassIconButton(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Kembali",
                     onClick = onBack,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(GlassLayer1)
-                        .border(0.8.dp, GlassBorderSubtle, CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Kembali",
-                        tint = AppleSystemBlue,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
+                    tint = AppleSystemBlue,
+                    containerColor = Color(0x1FFFFFFF)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
             }
 
             Column {
                 Text(
-                    text = "PENGATURAN",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppleTextSecondary,
-                    letterSpacing = 0.6.sp
+                    text = "AntiMager",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = AppleTextSecondary
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(1.dp))
                 Text(
-                    text = "Profil & Sistem",
-                    fontSize = 30.sp,
+                    text = "Pengaturan",
+                    fontSize = 34.sp,
                     fontWeight = FontWeight.Bold,
                     color = AppleTextPrimary,
-                    letterSpacing = (-0.6).sp
+                    letterSpacing = (-0.8).sp
                 )
             }
         }
@@ -229,12 +221,12 @@ fun SettingsScreen(
                         val isSelected = uiState.userClass.equals(cls, ignoreCase = true)
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(11.dp))
                                 .background(if (isSelected) AppleSystemBlue else GlassLayer1)
                                 .border(
                                     0.8.dp,
                                     if (isSelected) AppleSystemBlue else GlassBorderSubtle,
-                                    RoundedCornerShape(8.dp)
+                                    RoundedCornerShape(11.dp)
                                 )
                                 .clickable { viewModel.onClassChange(cls) }
                                 .padding(horizontal = 10.dp, vertical = 5.dp)
@@ -286,7 +278,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(18.dp))
 
         // SECTION 2: AI & ENGINE INTEGRATION
-        IosSectionHeader(title = "Dual AI Intelligence Engine")
+        IosSectionHeader(title = "AI")
 
         GlassCard(elevation = 2.dp) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -296,14 +288,14 @@ fun SettingsScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0x22F97316))
-                            .border(0.8.dp, Color(0xFFF97316).copy(alpha = 0.5f), CircleShape),
+                            .background(Color(0x1FFFFFFF))
+                            .border(0.7.dp, GlassBorderSubtle, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Bolt,
                             contentDescription = null,
-                            tint = Color(0xFFF97316),
+                            tint = AppleSystemBlue,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -332,14 +324,14 @@ fun SettingsScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0x225E5CE6))
-                            .border(0.8.dp, AppleSystemIndigo.copy(alpha = 0.4f), CircleShape),
+                            .background(Color(0x1FFFFFFF))
+                            .border(0.7.dp, GlassBorderSubtle, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,
                             contentDescription = null,
-                            tint = AppleSystemIndigo,
+                            tint = AppleTextSecondary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
