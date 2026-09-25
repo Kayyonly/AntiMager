@@ -178,41 +178,47 @@ fun IosBottomNavigationBar(
     onSelectTab: (MainTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val dockShape = RoundedCornerShape(26.dp)
+    val dockShape = RoundedCornerShape(30.dp)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = 18.dp, vertical = 10.dp)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 12.dp,
+                    elevation = 16.dp,
                     shape = dockShape,
-                    spotColor = Color(0x55000000),
-                    ambientColor = Color(0x30000000)
+                    spotColor = Color(0x6A000000),
+                    ambientColor = Color(0x36000000)
                 )
                 .clip(dockShape)
                 .background(LiquidGlassTokens.GlassDockSurfaceBrush)
                 .background(LiquidGlassTokens.GlassCardSheenBrush)
                 .border(
-                    width = 0.9.dp,
+                    width = 0.75.dp,
                     brush = LiquidGlassTokens.GlassSpecularBorderBrushElevated,
                     shape = dockShape
                 )
-                .padding(horizontal = 6.dp, vertical = 6.dp)
+                .padding(horizontal = 5.dp, vertical = 5.dp)
         ) {
-            // Specular top chamfer highlight
+            // Bright top reflection gives the dock the same "floating glass" read
+            // as native iOS chrome while keeping the center visually quiet.
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(0.72f)
                     .height(1.dp)
                     .background(
                         Brush.horizontalGradient(
-                            listOf(Color(0x00FFFFFF), Color(0x50FFFFFF), Color(0x00FFFFFF))
+                            listOf(
+                                Color.Transparent,
+                                Color(0x66FFFFFF),
+                                Color.Transparent
+                            )
                         )
                     )
             )
@@ -223,21 +229,28 @@ fun IosBottomNavigationBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 MainTab.entries.forEach { tab ->
-                    val isSelected = selectedTab == tab
-                    val tabShape = RoundedCornerShape(16.dp)
+                    val selected = tab == selectedTab
+                    val itemShape = RoundedCornerShape(20.dp)
 
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(tabShape)
-                            .background(if (isSelected) Color(0x28FFFFFF) else Color.Transparent)
+                            .clip(itemShape)
+                            .background(
+                                if (selected) Color(0x2BFFFFFF)
+                                else Color.Transparent
+                            )
                             .then(
-                                if (isSelected) {
-                                    Modifier.border(0.65.dp, Color(0x35FFFFFF), tabShape)
+                                if (selected) {
+                                    Modifier.border(
+                                        width = 0.6.dp,
+                                        color = Color(0x3FFFFFFF),
+                                        shape = itemShape
+                                    )
                                 } else Modifier
                             )
                             .clickable { onSelectTab(tab) }
-                            .padding(vertical = 6.dp),
+                            .padding(vertical = 7.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
@@ -245,18 +258,18 @@ fun IosBottomNavigationBar(
                             verticalArrangement = Arrangement.Center
                         ) {
                             Icon(
-                                imageVector = if (isSelected) tab.selectedIcon else tab.unselectedIcon,
+                                imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
                                 contentDescription = tab.title,
-                                tint = if (isSelected) AppleSystemBlue else AppleTextTertiary,
-                                modifier = Modifier.size(20.dp)
+                                tint = if (selected) AppleSystemBlue else AppleTextTertiary,
+                                modifier = Modifier.size(if (selected) 21.dp else 20.dp)
                             )
-                            Spacer(modifier = Modifier.height(3.dp))
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = tab.title,
-                                fontSize = 10.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) AppleSystemBlue else AppleTextTertiary,
-                                letterSpacing = (-0.1).sp
+                                fontSize = 9.5.sp,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                                color = if (selected) AppleTextPrimary else AppleTextTertiary,
+                                letterSpacing = (-0.15).sp
                             )
                         }
                     }
