@@ -462,11 +462,29 @@ fun GlassIconButton(
     tint: Color = AppleTextSecondary,
     containerColor: Color = Color.Transparent
 ) {
+    val effectiveContainer = if (containerColor == Color.Transparent) {
+        Color(0x16FFFFFF)
+    } else {
+        containerColor
+    }
+
     Box(
         modifier = modifier
             .size(44.dp)
+            .shadow(
+                elevation = 5.dp,
+                shape = CircleShape,
+                spotColor = Color(0x42000000),
+                ambientColor = Color(0x22000000)
+            )
             .clip(CircleShape)
-            .background(containerColor)
+            .background(effectiveContainer)
+            .background(LiquidGlassTokens.GlassCardSheenBrush)
+            .border(
+                width = 0.7.dp,
+                brush = LiquidGlassTokens.GlassSpecularBorderBrush,
+                shape = CircleShape
+            )
             .tactilePress(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
