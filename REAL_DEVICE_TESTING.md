@@ -56,15 +56,15 @@ Untuk geofence sistem yang paling stabil saat app benar-benar tertutup, beri izi
 3. Periksa hasil parsing.
 4. Tekan konfirmasi untuk menyimpan.
 
-Jika API AI tidak tersedia, parser Bahasa Indonesia lokal tetap dipakai.
+Text AI memakai Groq/Llama. Jika GROQ_API_KEY tidak tersedia, parser Bahasa Indonesia lokal tetap dipakai.
 
 ### Smart Priority
 
-Buat beberapa tugas dengan deadline dan prioritas berbeda. Urutan Smart Priority memakai algoritma lokal sebagai dasar, sehingga tetap berfungsi tanpa internet. Jika API AI tersedia, alasan prioritas akan diperkaya oleh AI.
+Buat beberapa tugas dengan deadline dan prioritas berbeda. Urutan Smart Priority memakai algoritma lokal sebagai dasar, sehingga tetap berfungsi tanpa internet. Jika GROQ_API_KEY tersedia, alasan dan ranking diperkuat oleh Groq/Llama.
 
 ### Scan jadwal
 
-Scan jadwal tidak lagi mengeluarkan data contoh/fake saat API gagal. Jika Gemini key belum tersedia, jaringan gagal, atau format hasil tidak valid, app menampilkan error dan tidak menyimpan jadwal palsu.
+Scan jadwal memakai Gemini Vision saja. Jika GEMINI_API_KEY belum tersedia, jaringan gagal, atau format hasil tidak valid, app menampilkan error dan tidak menyimpan jadwal palsu.
 
 ## Catatan
 
