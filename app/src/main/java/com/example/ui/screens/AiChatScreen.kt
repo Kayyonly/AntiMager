@@ -152,7 +152,7 @@ fun AiChatScreen(
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "Gemini 3.5 Flash",
+                    text = "Groq • Llama 3.3",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFFD0BCFF)
