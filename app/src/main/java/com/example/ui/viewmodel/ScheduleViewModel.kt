@@ -40,7 +40,7 @@ data class ScheduleUiState(
     val editingSchedule: ScheduleEntity? = null,
     val isFormOpen: Boolean = false,
     // User Settings / Profil Kelas
-    val userClass: String = "X IPA 2",
+    val userClass: String = "",
     // Scan states
     val isScanning: Boolean = false,
     val scanErrorMessage: String? = null,
