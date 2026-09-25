@@ -3,147 +3,140 @@ package com.example.ui.theme
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
-// ==========================================
-// iOS 26 Liquid Glass Design System
-// Subtle depth obsidian canvas, translucent frosted glass cards,
-// specular top-edge light reflection, disciplined neutral palette.
-// Zero neon orbs, zero rainbow gradient. Authentic glass physics.
-// ==========================================
+/*
+ * AntiMager Liquid Glass
+ *
+ * Inspired by the restrained translucent surfaces used across modern iOS apps:
+ * dark graphite canvas, soft atmospheric tint behind glass, bright specular
+ * top edges, and one iOS-blue interaction accent. No neon dashboard look.
+ */
 
-// Canvas & Surfaces
-val LiquidDarkBackground = Color(0xFF060709)       // Deep obsidian base
-val LiquidDarkElevated = Color(0xFF0C0E14)         // Secondary background
-val LiquidDarkSurface = Color(0xFF12151E)          // Content container surface
-val LiquidDarkCard = Color(0x33202838)             // Translucent glass surface (~20% opacity)
-val LiquidDarkCardSolid = Color(0xFF141720)        // Solid fallback when needed
+// Canvas
+val LiquidDarkBackground = Color(0xFF050608)
+val LiquidDarkElevated = Color(0xFF0B0D12)
+val LiquidDarkSurface = Color(0xFF11141A)
+val LiquidDarkCard = Color(0x4D202631)
+val LiquidDarkCardSolid = Color(0xFF171A20)
 
-// Liquid Glass Atmosphere Canvas Brush (Gentle neutral depth without bright colors)
 val LiquidGlassBackgroundBrush = Brush.verticalGradient(
     listOf(
-        Color(0xFF0F121A), // Subtle neutral slate depth at top
-        Color(0xFF080A0F), // Smooth neutral transition
-        Color(0xFF040507)  // Deep obsidian ground
+        Color(0xFF10131A),
+        Color(0xFF080A0F),
+        Color(0xFF040506)
     )
 )
 
-// Liquid Glass Card Surfaces (Translucent frosted glass with subtle sheen)
+// Main frosted layers. These remain deliberately translucent.
 val LiquidGlassCardSurfaceBrush = Brush.verticalGradient(
     listOf(
-        Color(0x38283344), // Soft top ambient refraction (~22% alpha)
-        Color(0x221B2230), // Translucent core (~13% alpha)
-        Color(0x18121722)  // Deep base (~10% alpha)
+        Color(0x492B323E),
+        Color(0x30202731),
+        Color(0x24171C24)
     )
 )
 
 val LiquidGlassCardSheenBrush = Brush.verticalGradient(
     listOf(
-        Color(0x1EFFFFFF), // Specular light wash across upper glass face (~12%)
-        Color(0x06FFFFFF), // Mid fade
-        Color(0x00FFFFFF)  // Zero sheen at bottom
+        Color(0x22FFFFFF),
+        Color(0x0BFFFFFF),
+        Color(0x00FFFFFF)
     )
 )
 
-// Specular Edge Reflection Brushes (Simulates light catching the chamfered glass edge)
 val LiquidGlassSpecularBorderBrush = Brush.verticalGradient(
     listOf(
-        Color(0x52FFFFFF), // ~32% crisp specular highlight on top edge
-        Color(0x1EFFFFFF), // ~12% subtle side reflection
-        Color(0x0AFFFFFF)  // ~4% soft shadow-side edge
+        Color(0x5CFFFFFF),
+        Color(0x25FFFFFF),
+        Color(0x0FFFFFFF)
     )
 )
 
 val LiquidGlassSpecularBorderBrushElevated = Brush.verticalGradient(
     listOf(
-        Color(0x6EFFFFFF), // ~43% floating specular highlight
-        Color(0x28FFFFFF), // ~16% side edge
-        Color(0x10FFFFFF)  // ~6% bottom edge
+        Color(0x7AFFFFFF),
+        Color(0x32FFFFFF),
+        Color(0x12FFFFFF)
     )
 )
 
-// Floating Dock & Modal Sheet Glass Brushes
+// Floating chrome (bottom dock / floating controls)
 val LiquidGlassDockSurfaceBrush = Brush.verticalGradient(
     listOf(
-        Color(0x801A202C), // Translucent smoky dock glass (~50% opacity)
-        Color(0x60111520)  // Subtle depth (~38% opacity)
+        Color(0xA62A303A),
+        Color(0x8A161B22)
     )
 )
 
 val LiquidGlassModalSurfaceBrush = Brush.verticalGradient(
     listOf(
-        Color(0xF012151C), // Frosted dark modal glass
-        Color(0xE60A0D12)
+        Color(0xF01A1D24),
+        Color(0xE80D1015)
     )
 )
 
-// Dedicated Chat Bubble Brushes
+val LiquidGlassInputSurfaceBrush = Brush.verticalGradient(
+    listOf(
+        Color(0x2EFFFFFF),
+        Color(0x18FFFFFF)
+    )
+)
+
 val LiquidGlassUserBubbleBrush = Brush.verticalGradient(
     listOf(
-        Color(0xEE0A84FF),
-        Color(0xD00071E3)
+        Color(0xF20A84FF),
+        Color(0xE00070DC)
     )
 )
 
 val LiquidGlassAssistantBubbleBrush = Brush.verticalGradient(
     listOf(
-        Color(0x38283446),
-        Color(0x221A2230)
+        Color(0x542B323D),
+        Color(0x321C222B)
     )
 )
 
-// Translucent Input Field Surface Brush
-val LiquidGlassInputSurfaceBrush = Brush.verticalGradient(
-    listOf(
-        Color(0x22FFFFFF),
-        Color(0x12FFFFFF)
-    )
-)
+// Native translucent layers
+val GlassLayer1 = Color(0x14FFFFFF)
+val GlassLayer2 = Color(0x24FFFFFF)
+val GlassLayer3 = Color(0x38FFFFFF)
+val GlassModalBackground = Color(0xEA11141A)
 
-// Native Translucent Surfaces & Subtle Hairlines
-val GlassLayer1 = Color(0x12FFFFFF)                // ~7% soft glass wash
-val GlassLayer2 = Color(0x22FFFFFF)                // ~13% floating glass
-val GlassLayer3 = Color(0x35FFFFFF)                // ~21% active specular surface
-val GlassModalBackground = Color(0xE811141A)       // Translucent dark frosted modal
+val GlassBorderSubtle = Color(0x1FFFFFFF)
+val GlassBorderStandard = Color(0x35FFFFFF)
+val GlassBorderHighlight = Color(0x66FFFFFF)
 
-// Borders: Subtle specular hairlines
-val GlassBorderSubtle = Color(0x16FFFFFF)          // ~8.5% hairline
-val GlassBorderStandard = Color(0x2EFFFFFF)        // ~18% glass border
-val GlassBorderHighlight = Color(0x52FFFFFF)       // ~32% specular light catch
+// Accent
+val AppleSystemBlue = Color(0xFF0A84FF)
+val AppleSystemBlueSubtle = Color(0x260A84FF)
+val AppleSystemBlueGlow = Color(0x260A84FF)
 
-// Primary Accent: Single disciplined iOS System Blue
-val AppleSystemBlue = Color(0xFF0A84FF)            // iOS primary blue
-val AppleSystemBlueSubtle = Color(0x240A84FF)      // 14% tinted touch
-val AppleSystemBlueGlow = Color(0x00000000)        // No glow
+val AppleSystemGreen = Color(0xFF30D158)
+val AppleSystemRed = Color(0xFFFF453A)
+val AppleSystemOrange = Color(0xFFFF9F0A)
+val AppleSystemIndigo = Color(0xFF5E5CE6)
 
-// Functional Accents (Restrained for real status only)
-val AppleSystemGreen = Color(0xFF30D158)           // Completed/success only
-val AppleSystemRed = Color(0xFFFF453A)             // Urgent/destructive only
-val AppleSystemOrange = Color(0xFFFF9F0A)          // Warning only
-val AppleSystemIndigo = Color(0xFF5E5CE6)          // Quiet intelligence tint
-
-// Typography: Strict Native iOS Opacity Hierarchy
-val AppleTextPrimary = Color(0xFFF5F5F7)           // #F5F5F7 Near-white
-val AppleTextSecondary = Color(0x8CFFFFFF)         // rgba(255,255,255,0.55)
-val AppleTextTertiary = Color(0x59FFFFFF)          // rgba(255,255,255,0.35)
+// Text
+val AppleTextPrimary = Color(0xFFF7F7FA)
+val AppleTextSecondary = Color(0xA6FFFFFF)
+val AppleTextTertiary = Color(0x70FFFFFF)
 val AppleTextMuted = AppleTextTertiary
-val AppleTextPlaceholder = Color(0x3DFFFFFF)       // rgba(255,255,255,0.24)
+val AppleTextPlaceholder = Color(0x4FFFFFFF)
 
-// Shadows: Soft ambient occlusion
-val GlassShadowAmbient = Color(0x26000000)
-val GlassShadowSpot = Color(0x38000000)
+// Shadows
+val GlassShadowAmbient = Color(0x33000000)
+val GlassShadowSpot = Color(0x59000000)
 
-// Urgency and Status Mapping
+// Status aliases
 val UrgencyCritical = AppleSystemRed
 val UrgencyWarning = AppleSystemOrange
 val UrgencyRelaxed = AppleTextSecondary
 val UrgencyCompleted = AppleTextTertiary
 
-// ==========================================
-// Compatibility Aliases
-// ==========================================
+// Compatibility aliases used throughout the current screens.
 val IosSystemBackground = LiquidDarkBackground
 val IosSystemBackgroundSecondary = LiquidDarkElevated
 val IosSurfaceCard = LiquidDarkCard
-val IosSurfaceCardPressed = Color(0x4D242B38)
+val IosSurfaceCardPressed = Color(0x5A303743)
 val IosSurfaceElevated = LiquidDarkElevated
 
 val IosSeparator = GlassBorderStandard
@@ -161,10 +154,10 @@ val IosPurple = Color(0xFFBF5AF2)
 
 val IosGray1 = AppleTextSecondary
 val IosGray2 = AppleTextTertiary
-val IosGray3 = Color(0x4DFFFFFF)
-val IosGray4 = Color(0x2EFFFFFF)
-val IosGray5 = Color(0x1FFFFFFF)
-val IosGray6 = Color(0x12FFFFFF)
+val IosGray3 = Color(0x58FFFFFF)
+val IosGray4 = Color(0x38FFFFFF)
+val IosGray5 = Color(0x26FFFFFF)
+val IosGray6 = Color(0x16FFFFFF)
 
 val IosTextPrimary = AppleTextPrimary
 val IosTextSecondary = AppleTextSecondary
