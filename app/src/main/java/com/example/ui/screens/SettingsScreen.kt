@@ -322,14 +322,14 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "AI Parser & Schedule Scan",
+                            text = "Groq Text + Gemini Vision",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = AppleTextPrimary,
                             letterSpacing = (-0.2).sp
                         )
                         Text(
-                            text = "Menggunakan API jika key tersedia, dengan fallback lokal untuk parsing tugas",
+                            text = "Groq/Llama untuk teks • Gemini hanya untuk scan foto jadwal",
                             fontSize = 12.sp,
                             color = AppleTextSecondary
                         )
@@ -417,7 +417,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Smart Priority Sorting", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = AppleTextPrimary)
-                        Text("Algoritma lokal selalu tersedia; AI memperkaya alasan prioritas", fontSize = 11.sp, color = AppleTextSecondary)
+                        Text("Groq/Llama + fallback algoritma lokal", fontSize = 11.sp, color = AppleTextSecondary)
                     }
                     Box(
                         modifier = Modifier
