@@ -9,7 +9,7 @@ import com.example.data.ai.ParsedTaskResult
 import com.example.data.local.entity.TaskEntity
 import com.example.data.repository.TaskRepository
 import com.example.data.service.AiPrioritySortResult
-import com.example.data.service.GeminiPriorityService
+import com.example.data.service.GroqPriorityService
 import com.example.util.LocationReminderManager
 import com.example.util.NotificationHelper
 import com.example.util.SmartPrioritySorter
@@ -169,15 +169,15 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         // Automatically perform smart priority sorting on startup
-        triggerGeminiAiSort()
+        triggerGroqAiSort()
     }
 
-    fun triggerGeminiAiSort() {
+    fun triggerGroqAiSort() {
         viewModelScope.launch {
             _isAiSortingLoading.value = true
             try {
                 val currentTasks = repository.allTasks.first()
-                val result = GeminiPriorityService.sortTasksWithGemini(currentTasks)
+                val result = GroqPriorityService.sortTasksWithGroq(currentTasks)
                 _aiSortResult.value = result
             } catch (e: Exception) {
                 // ignore
@@ -190,7 +190,7 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
     fun setSortMode(mode: SortMode) {
         _sortMode.value = mode
         if (mode == SortMode.SMART_AI && _aiSortResult.value == null) {
-            triggerGeminiAiSort()
+            triggerGroqAiSort()
         }
     }
 
@@ -213,7 +213,7 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
                 TaskReminderScheduler.schedule(getApplication(), task.copy(isCompleted = false))
             }
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
-            triggerGeminiAiSort()
+            triggerGroqAiSort()
         }
     }
 
@@ -228,7 +228,7 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
             NotificationHelper.dismissNotification(getApplication(), task.id)
             TaskReminderScheduler.schedule(getApplication(), updated)
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
-            triggerGeminiAiSort()
+            triggerGroqAiSort()
         }
     }
 
@@ -238,7 +238,7 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
             NotificationHelper.dismissNotification(getApplication(), task.id)
             TaskReminderScheduler.cancel(getApplication(), task.id)
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
-            triggerGeminiAiSort()
+            triggerGroqAiSort()
         }
     }
 
@@ -278,7 +278,7 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
             }
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
             // Re-run AI sort to factor in the new task
-            triggerGeminiAiSort()
+            triggerGroqAiSort()
         }
     }
 
