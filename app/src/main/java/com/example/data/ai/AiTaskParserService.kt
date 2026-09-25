@@ -41,46 +41,65 @@ object AiTaskParserService {
         .build()
 
     /**
-     * Gemini 3.5 Flash natural language parser with structured fallback
+     * Groq/Llama natural-language parser with deterministic local fallback.
+     * Gemini is intentionally NOT used for text in AntiMager.
      */
-    suspend fun parseWithExternalApi(userStory: String, conversationContext: String? = null): ParsedTaskResult? = withContext(Dispatchers.IO) {
+    suspend fun parseWithExternalApi(
+        userStory: String,
+        conversationContext: String? = null
+    ): ParsedTaskResult? = withContext(Dispatchers.IO) {
         val apiKey = try {
-            BuildConfig.GEMINI_API_KEY
-        } catch (e: Exception) {
+            BuildConfig.GROQ_API_KEY
+        } catch (_: Exception) {
             ""
         }
-        if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") return@withContext null
+        val configuredModel = try {
+            BuildConfig.GROQ_MODEL
+        } catch (_: Exception) {
+            ""
+        }
+        val model = configuredModel.ifBlank { "llama-3.3-70b-versatile" }
+
+        if (apiKey.isBlank() || apiKey == "MY_GROQ_API_KEY") {
+            return@withContext null
+        }
 
         try {
             val sdf = SimpleDateFormat("EEEE, dd MMMM yyyy HH:mm", Locale("id", "ID"))
             val nowStr = sdf.format(Date())
 
             val contextNote = if (!conversationContext.isNullOrBlank()) {
-                "Konteks pesan sebelumnya dari percakapan: \"$conversationContext\"."
-            } else ""
+                "Konteks pesan sebelumnya: \"$conversationContext\"."
+            } else {
+                ""
+            }
 
-            val prompt = """
-                Kamu adalah parser tugas AntiMager AI berbahasa Indonesia.
-                Waktu sekarang: $nowStr (WIB).
+            val systemPrompt = """
+                Kamu adalah parser tugas AntiMager berbahasa Indonesia.
+                Tugasmu HANYA mengubah input pengguna menjadi JSON terstruktur.
+                Jangan menambah fakta yang tidak diberikan.
+                Jika judul tugas tidak jelas, tandai ambigu dan minta klarifikasi singkat.
+            """.trimIndent()
+
+            val userPrompt = """
+                Waktu sekarang: $nowStr.
                 $contextNote
-                
+
                 Input pengguna: "$userStory"
-                
-                Instruksi:
-                1. Jika input SANGAT AMBIGU (contoh: "besok kerjain tugas", "nanti ingetin tugas", "ada tugas besok") dan nama/judul tugas TIDAK DISEBUTKAN:
-                   Set "isAmbiguous": true, "clarificationQuestion": "Tugas apa yang mau dikerjakan? Ceritakan judul atau mata pelajarannya ya!"
-                2. Jika informasi tugas JELAS (contoh: "PR IPS besok", "Kerjain matematika jam 8 malam", "Jumat kumpul tugas IPA", "Nanti sore ingetin beli buku", "Besok sebelum sekolah bawa seragam olahraga"):
-                   Set "isAmbiguous": false, "clarificationQuestion": null.
-                   Ekstrak atribut tugas berikut:
-                   - "title": Judul tugas ringkas tanpa kata waktu/perintah (contoh: "PR IPS", "Kerjain Matematika", "Kumpul Tugas IPA", "Beli Buku", "Bawa Seragam Olahraga")
-                   - "subject": Kategori/Mapel (Matematika/IPA/Biologi/Fisika/Kimia/IPS/B. Indonesia/B. Inggris/Sejarah/Penjasorkes/Belanja/Rumah/Umum)
-                   - "estimatedMinutes": Perkiraan durasi menit (15 - 120)
-                   - "priority": "HIGH" (jika mendesak/penting/hari ini), "MEDIUM", atau "LOW"
-                   - "locationTag": Tempat terkait (Sekolah/Indomaret/Rumah/Perpustakaan/null)
-                   - "deadlineIso": Format "yyyy-MM-dd HH:mm"
-                   - "aiAdvice": 1 kalimat tips psikologis anti-prokrastinasi dalam bahasa santai & ramah
-                
-                Kembalikan HANYA JSON murni format:
+
+                Aturan:
+                - Jika input sangat ambigu seperti "besok kerjain tugas" tanpa judul/mapel:
+                  isAmbiguous=true dan isi clarificationQuestion.
+                - Jika jelas, ekstrak:
+                  title
+                  subject
+                  estimatedMinutes (15-120)
+                  priority: HIGH / MEDIUM / LOW
+                  locationTag: Sekolah / Indomaret / Rumah / Perpustakaan / null
+                  deadlineIso: yyyy-MM-dd HH:mm
+                  aiAdvice: 1 kalimat singkat bahasa Indonesia santai
+
+                Balas HANYA JSON:
                 {
                   "isAmbiguous": false,
                   "clarificationQuestion": null,
@@ -89,80 +108,102 @@ object AiTaskParserService {
                   "estimatedMinutes": 35,
                   "priority": "HIGH",
                   "locationTag": "Sekolah",
-                  "deadlineIso": "2026-09-25 08:00",
-                  "aiAdvice": "Cicil 1 nomor sekarang biar besok pagi gak panik!"
+                  "deadlineIso": "2026-09-26 08:00",
+                  "aiAdvice": "Cicil sekarang biar besok gak panik."
                 }
             """.trimIndent()
 
             val requestJson = JSONObject().apply {
-                val contents = JSONArray().apply {
+                put("model", model)
+                put("temperature", 0.1)
+                put("response_format", JSONObject().apply {
+                    put("type", "json_object")
+                })
+                put("messages", JSONArray().apply {
                     put(JSONObject().apply {
-                        put("parts", JSONArray().apply {
-                            put(JSONObject().apply { put("text", prompt) })
-                        })
+                        put("role", "system")
+                        put("content", systemPrompt)
                     })
-                }
-                put("contents", contents)
-                put("generationConfig", JSONObject().apply {
-                    put("responseMimeType", "application/json")
-                    put("temperature", 0.1)
+                    put(JSONObject().apply {
+                        put("role", "user")
+                        put("content", userPrompt)
+                    })
                 })
             }
 
             val request = Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=$apiKey")
-                .post(requestJson.toString().toRequestBody("application/json".toMediaType()))
+                .url("https://api.groq.com/openai/v1/chat/completions")
+                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("Content-Type", "application/json")
+                .post(requestJson.toString().toRequestBody("application/json; charset=utf-8".toMediaType()))
                 .build()
 
             val response = httpClient.newCall(request).execute()
-            if (!response.isSuccessful) return@withContext null
+            if (!response.isSuccessful) {
+                Log.w(TAG, "Groq parser HTTP ${response.code}")
+                return@withContext null
+            }
 
             val body = response.body?.string() ?: return@withContext null
             val root = JSONObject(body)
-            val text = root.optJSONArray("candidates")?.optJSONObject(0)
-                ?.optJSONObject("content")?.optJSONArray("parts")?.optJSONObject(0)
-                ?.optString("text") ?: return@withContext null
+            val text = root.optJSONArray("choices")
+                ?.optJSONObject(0)
+                ?.optJSONObject("message")
+                ?.optString("content")
+                ?.trim()
+                .orEmpty()
+
+            if (text.isBlank()) return@withContext null
 
             val parsed = JSONObject(text)
             val isAmbiguous = parsed.optBoolean("isAmbiguous", false)
-            val clarification = parsed.optString("clarificationQuestion", null)
+            val clarification = parsed.optString("clarificationQuestion").takeIf { it.isNotBlank() && it != "null" }
 
             if (isAmbiguous) {
                 return@withContext ParsedTaskResult(
                     title = "",
                     subject = "Umum",
                     description = userStory,
-                    deadlineMillis = System.currentTimeMillis() + 86400000L,
+                    deadlineMillis = System.currentTimeMillis() + 86_400_000L,
                     deadlineFormatted = "Besok",
                     estimatedMinutes = 30,
                     priority = "MEDIUM",
                     aiAdvice = clarification ?: "Tugas apa yang mau dikerjain?",
                     isAmbiguous = true,
-                    clarificationQuestion = clarification ?: "Tugas apa yang mau dikerjain? Ceritakan judul atau mata pelajarannya ya!"
+                    clarificationQuestion = clarification ?: "Tugas apa yang mau dikerjain? Sebut judul atau mapelnya ya."
                 )
             }
 
-            val title = parsed.optString("title", userStory)
-            val subject = parsed.optString("subject", "Umum")
-            val estimated = parsed.optInt("estimatedMinutes", 30)
-            val priority = parsed.optString("priority", "MEDIUM")
-            val location = if (parsed.isNull("locationTag") || parsed.optString("locationTag").isBlank()) null else parsed.optString("locationTag")
-            val advice = parsed.optString("aiAdvice", "Kerjakan tepat waktu agar pikiran bebas santuy!")
+            val title = parsed.optString("title", userStory).ifBlank { userStory }
+            val subject = parsed.optString("subject", "Umum").ifBlank { "Umum" }
+            val estimated = parsed.optInt("estimatedMinutes", 30).coerceIn(5, 240)
+            val priority = parsed.optString("priority", "MEDIUM").uppercase().let {
+                if (it in setOf("HIGH", "MEDIUM", "LOW")) it else "MEDIUM"
+            }
+            val location = parsed.optString("locationTag")
+                .takeIf { it.isNotBlank() && it != "null" }
+            val advice = parsed.optString("aiAdvice", "Kerjain sedikit dulu biar gak numpuk.")
             val deadlineIso = parsed.optString("deadlineIso", "")
 
-            var deadlineMillis = System.currentTimeMillis() + (4 * 3600 * 1000L)
+            var deadlineMillis = System.currentTimeMillis() + (4 * 60 * 60 * 1000L)
             var deadlineFormatted = "Hari ini"
+
             if (deadlineIso.isNotBlank()) {
                 try {
-                    val parser = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
+                    val parser = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).apply {
+                        isLenient = false
+                    }
                     val date = parser.parse(deadlineIso)
                     if (date != null) {
                         deadlineMillis = date.time
-                        val outFmt = SimpleDateFormat("dd MMM, HH:mm", Locale("id", "ID"))
-                        deadlineFormatted = outFmt.format(date)
+                        deadlineFormatted = SimpleDateFormat(
+                            "dd MMM, HH:mm",
+                            Locale("id", "ID")
+                        ).format(date)
                     }
                 } catch (e: Exception) {
-                    Log.w(TAG, "Failed to parse deadlineIso: $deadlineIso", e)
+                    Log.w(TAG, "Invalid Groq deadlineIso: $deadlineIso", e)
+                    return@withContext null
                 }
             }
 
@@ -180,7 +221,7 @@ object AiTaskParserService {
                 clarificationQuestion = null
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error calling Gemini parser", e)
+            Log.e(TAG, "Groq text parser failed", e)
             null
         }
     }

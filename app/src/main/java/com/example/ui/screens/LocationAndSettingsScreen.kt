@@ -40,6 +40,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,9 +51,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.example.data.repository.AppBlockerManager
 import com.example.ui.activity.AppBlockerOverlayActivity
 import com.example.ui.activity.VoiceActionActivity
@@ -90,6 +94,20 @@ fun LocationAndSettingsScreen(
 
     // Geofencing States
     var isGeofenceActive by remember { mutableStateOf(LocationReminderManager.isGeofencingActive(context)) }
+    var locationConfigVersion by remember { mutableStateOf(0) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isAccessibilityActive = AppBlockerManager.isAccessibilityServiceEnabled(context)
+                isBlockerActive = AppBlockerManager.isBlockerEnabled(context)
+                isGeofenceActive = LocationReminderManager.isGeofencingActive(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     LazyColumn(
         modifier = modifier
@@ -244,7 +262,7 @@ fun LocationAndSettingsScreen(
                     Spacer(modifier = Modifier.height(14.dp))
 
                     // Accessibility Service Status Banner
-                    val isServiceOn = AppBlockerManager.isAccessibilityServiceEnabled(context)
+                    val isServiceOn = isAccessibilityActive
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -453,43 +471,79 @@ fun LocationAndSettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    LocationReminderManager.PRESET_LOCATIONS.forEach { area ->
+                    // Reading locationConfigVersion here makes the list refresh after GPS calibration.
+                    locationConfigVersion
+                    LocationReminderManager.getConfiguredAreas(context).forEach { area ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 6.dp),
+                                .padding(vertical = 7.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "📍 ${area.name}",
+                                    text = area.name,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = IosTextPrimary
                                 )
                                 Text(
-                                    text = "${area.description} • Radius ${area.radiusMeters.toInt()}m",
+                                    text = if (area.latitude != null && area.longitude != null) {
+                                        "Lokasi tersimpan • Radius ${area.radiusMeters.toInt()}m"
+                                    } else {
+                                        "Belum diatur • datang ke lokasi lalu tekan Set di sini"
+                                    },
                                     fontSize = 11.sp,
                                     color = IosTextSecondary
                                 )
                             }
 
-                            // Interactive Simulation Button for quick demo
-                            Button(
-                                onClick = {
-                                    viewModel.simulateLocationEvent(area.name, true)
-                                    Toast.makeText(context, "Masuk area ${area.name}!", Toast.LENGTH_SHORT).show()
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = IosGray5,
-                                    contentColor = IosTextPrimary
-                                ),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                modifier = Modifier.height(30.dp)
-                            ) {
-                                Text("Tes Masuk", fontSize = 11.sp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Button(
+                                    onClick = {
+                                        LocationReminderManager.saveCurrentLocationForArea(
+                                            context = context,
+                                            areaId = area.id
+                                        ) { success, msg ->
+                                            if (success) {
+                                                locationConfigVersion += 1
+                                                if (isGeofenceActive) {
+                                                    LocationReminderManager.startRealBackgroundGeofencing(context) { ok, _ ->
+                                                        isGeofenceActive = ok
+                                                    }
+                                                }
+                                            }
+                                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = IosGray5,
+                                        contentColor = IosTextPrimary
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(30.dp)
+                                ) {
+                                    Text(if (area.latitude == null) "Set di sini" else "Update", fontSize = 11.sp)
+                                }
+
+                                if (area.latitude != null && area.longitude != null) {
+                                    Button(
+                                        onClick = {
+                                            viewModel.simulateLocationEvent(area.name, true)
+                                        },
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = IosGray5,
+                                            contentColor = IosTextPrimary
+                                        ),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        modifier = Modifier.height(30.dp)
+                                    ) {
+                                        Text("Tes", fontSize = 11.sp)
+                                    }
+                                }
                             }
                         }
                     }

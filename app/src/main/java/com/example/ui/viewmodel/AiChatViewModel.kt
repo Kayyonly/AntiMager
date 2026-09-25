@@ -8,7 +8,8 @@ import com.example.data.ai.AiTaskParserService
 import com.example.data.ai.ParsedTaskResult
 import com.example.data.local.entity.TaskEntity
 import com.example.data.repository.TaskRepository
-import com.example.util.NotificationHelper
+import com.example.util.LocationReminderManager
+import com.example.util.TaskReminderScheduler
 import com.example.widget.AntiMagerWidgetProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -129,10 +130,15 @@ class AiChatViewModel(application: Application) : AndroidViewModel(application) 
                 priority = parsed.priority,
                 isCompleted = false,
                 isPersistent = true,
-                locationName = parsed.locationTag
+                locationName = parsed.locationTag,
+                locationTrigger = if (parsed.locationTag.isNullOrBlank()) null else "ENTER"
             )
             val newId = repository.insertTask(task)
-            NotificationHelper.showPersistentReminderNotification(getApplication(), task.copy(id = newId))
+            val createdTask = task.copy(id = newId)
+            TaskReminderScheduler.schedule(getApplication(), createdTask)
+            if (!createdTask.locationName.isNullOrBlank()) {
+                LocationReminderManager.refreshGeofencesIfActive(getApplication())
+            }
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
 
             // Update message state as saved

@@ -33,10 +33,10 @@ data class AiPrioritySortResult(
     val globalAdvice: String
 )
 
-object GeminiPriorityService {
+object GroqPriorityService {
 
-    private const val TAG = "GeminiPriorityService"
-    private const val GEMINI_MODEL = "gemini-3.5-flash"
+    private const val TAG = "GroqPriorityService"
+    private const val DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
@@ -44,7 +44,7 @@ object GeminiPriorityService {
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    suspend fun sortTasksWithGemini(
+    suspend fun sortTasksWithGroq(
         tasks: List<TaskEntity>,
         nowMillis: Long = System.currentTimeMillis()
     ): AiPrioritySortResult = withContext(Dispatchers.IO) {
@@ -60,14 +60,20 @@ object GeminiPriorityService {
         }
 
         val apiKey = try {
-            BuildConfig.GEMINI_API_KEY
-        } catch (e: Exception) {
+            BuildConfig.GROQ_API_KEY
+        } catch (_: Exception) {
             ""
         }
+        val configuredModel = try {
+            BuildConfig.GROQ_MODEL
+        } catch (_: Exception) {
+            ""
+        }
+        val model = configuredModel.ifBlank { DEFAULT_GROQ_MODEL }
 
-        if (apiKey.isBlank()) {
-            Log.w(TAG, "Gemini API key is blank, falling back to smart heuristic")
-            return@withContext fallbackHeuristic(tasks, nowMillis, "Mode Offline: Menggunakan algoritma heuristik AntiMager")
+        if (apiKey.isBlank() || apiKey == "MY_GROQ_API_KEY") {
+            Log.w(TAG, "Groq API key is blank, falling back to smart heuristic")
+            return@withContext fallbackHeuristic(tasks, nowMillis, "Mode offline: algoritma prioritas AntiMager")
         }
 
         try {
@@ -123,51 +129,51 @@ object GeminiPriorityService {
             """.trimIndent()
 
             val requestJson = JSONObject().apply {
-                val contentsArray = JSONArray().apply {
-                    val contentObj = JSONObject().apply {
-                        val partsArray = JSONArray().apply {
-                            put(JSONObject().apply {
-                                put("text", systemPrompt)
-                            })
-                        }
-                        put("parts", partsArray)
-                    }
-                    put(contentObj)
-                }
-                put("contents", contentsArray)
-
-                val generationConfig = JSONObject().apply {
-                    put("responseMimeType", "application/json")
-                    put("temperature", 0.2)
-                }
-                put("generationConfig", generationConfig)
+                put("model", model)
+                put("temperature", 0.2)
+                put("response_format", JSONObject().apply { put("type", "json_object") })
+                put("messages", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("role", "system")
+                        put(
+                            "content",
+                            "Kamu adalah mesin prioritas AntiMager. Urutkan tugas berdasarkan deadline, durasi, prioritas manual, dan riwayat snooze. Balas hanya JSON valid."
+                        )
+                    })
+                    put(JSONObject().apply {
+                        put("role", "user")
+                        put("content", systemPrompt)
+                    })
+                })
             }
 
-            val requestBody = requestJson.toString().toRequestBody("application/json".toMediaType())
-            val url = "https://generativelanguage.googleapis.com/v1beta/models/$GEMINI_MODEL:generateContent?key=$apiKey"
+            val requestBody = requestJson.toString()
+                .toRequestBody("application/json; charset=utf-8".toMediaType())
 
             val request = Request.Builder()
-                .url(url)
-                .post(requestBody)
+                .url("https://api.groq.com/openai/v1/chat/completions")
+                .addHeader("Authorization", "Bearer $apiKey")
                 .addHeader("Content-Type", "application/json")
+                .post(requestBody)
                 .build()
 
             val response = client.newCall(request).execute()
             if (!response.isSuccessful) {
                 val errorBody = response.body?.string() ?: ""
-                Log.e(TAG, "Gemini API failed HTTP ${response.code}: $errorBody")
+                Log.e(TAG, "Groq API failed HTTP ${response.code}: $errorBody")
                 return@withContext fallbackHeuristic(tasks, nowMillis, "Gagal koneksi AI (${response.code}), menggunakan heuristik cerdas")
             }
 
             val responseBody = response.body?.string() ?: ""
             val jsonRoot = JSONObject(responseBody)
-            val candidates = jsonRoot.optJSONArray("candidates")
-            val candidate = candidates?.optJSONObject(0)
-            val parts = candidate?.optJSONObject("content")?.optJSONArray("parts")
-            val textOutput = parts?.optJSONObject(0)?.optString("text") ?: ""
+            val textOutput = jsonRoot.optJSONArray("choices")
+                ?.optJSONObject(0)
+                ?.optJSONObject("message")
+                ?.optString("content")
+                .orEmpty()
 
             if (textOutput.isBlank()) {
-                return@withContext fallbackHeuristic(tasks, nowMillis, "Format respon kosong dari Gemini")
+                return@withContext fallbackHeuristic(tasks, nowMillis, "Format respon kosong dari Groq")
             }
 
             val parsedJson = JSONObject(textOutput)
@@ -213,17 +219,17 @@ object GeminiPriorityService {
                 }
             }
 
-            Log.d(TAG, "Successfully sorted ${prioritizedList.size} tasks with Gemini 3.5 Flash")
+            Log.d(TAG, "Successfully sorted ${prioritizedList.size} tasks with Groq")
 
             AiPrioritySortResult(
                 isRealAi = true,
-                modelName = "Gemini 3.5 Flash",
+                modelName = "Groq • $model",
                 prioritizedTasks = prioritizedList,
                 globalAdvice = globalAdvice
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Exception during Gemini Priority Sorting", e)
-            fallbackHeuristic(tasks, nowMillis, "Error memanggil AI (${e.localizedMessage}), menggunakan heuristik lokal")
+            Log.e(TAG, "Exception during Groq Priority Sorting", e)
+            fallbackHeuristic(tasks, nowMillis, "Error memanggil Groq (${e.localizedMessage}), menggunakan heuristik lokal")
         }
     }
 

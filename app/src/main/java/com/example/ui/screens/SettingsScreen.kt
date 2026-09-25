@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,6 +50,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import com.example.data.repository.AppBlockerManager
 import com.example.ui.components.GlassButton
 import com.example.ui.components.GlassButtonVariant
 import com.example.ui.components.GlassCard
@@ -71,6 +75,7 @@ import com.example.ui.theme.GlassLayer2
 import com.example.ui.theme.LiquidDarkBackground
 import com.example.ui.theme.LiquidDarkCard
 import com.example.ui.viewmodel.SettingsViewModel
+import com.example.util.LocationReminderManager
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -82,6 +87,14 @@ fun SettingsScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
+    val blockerReady = AppBlockerManager.isBlockerEnabled(context) &&
+        AppBlockerManager.isAccessibilityServiceEnabled(context)
+    val locationReady = LocationReminderManager.isGeofencingActive(context)
+    val microphoneReady = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.RECORD_AUDIO
+    ) == PackageManager.PERMISSION_GRANTED
+
     LaunchedEffect(uiState.saveMessage) {
         uiState.saveMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -90,9 +103,9 @@ fun SettingsScreen(
     }
 
     val quickClasses = listOf(
-        "X IPA 1", "X IPA 2", "X IPS 1", "X IPS 2",
-        "XI MIPA 1", "XI MIPA 2", "XI IPS 1", "XII MIPA 1",
-        "7A", "7B", "8A", "8B", "9A", "9B"
+        "VII.1", "VII.2", "VII.3", "VII.4",
+        "VIII.1", "VIII.2", "VIII.3", "VIII.4",
+        "IX.1", "IX.2", "IX.3", "IX.4", "IX.5", "IX.6", "IX.7", "IX.8", "IX.9"
     )
 
     Column(
@@ -193,7 +206,7 @@ fun SettingsScreen(
                 OutlinedTextField(
                     value = uiState.userClass,
                     onValueChange = { viewModel.onClassChange(it) },
-                    placeholder = { Text("Contoh: X IPA 2 atau XI MIPA 1", color = AppleTextPlaceholder, fontSize = 14.sp) },
+                    placeholder = { Text("Contoh: IX.7 atau X IPA 2", color = AppleTextPlaceholder, fontSize = 14.sp) },
                     label = { Text("Nama Kelas Kamu", fontSize = 12.sp) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(LiquidGlassTokens.RadiusInput),
@@ -309,14 +322,14 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Google Gemini 3.5 Flash",
+                            text = "Groq Text + Gemini Vision",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = AppleTextPrimary,
                             letterSpacing = (-0.2).sp
                         )
                         Text(
-                            text = "Model aktif untuk analisis bahasa & visual scan",
+                            text = "Groq/Llama untuk teks • Gemini hanya untuk scan foto jadwal",
                             fontSize = 12.sp,
                             color = AppleTextSecondary
                         )
@@ -379,10 +392,15 @@ fun SettingsScreen(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(AppleSystemGreen.copy(alpha = 0.16f))
+                            .background((if (blockerReady) AppleSystemGreen else AppleSystemOrange).copy(alpha = 0.16f))
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
-                        Text("Aktif", fontSize = 11.sp, color = AppleSystemGreen, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            if (blockerReady) "Siap" else "Perlu izin",
+                            fontSize = 11.sp,
+                            color = if (blockerReady) AppleSystemGreen else AppleSystemOrange,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
 
@@ -399,7 +417,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Smart Priority Sorting", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = AppleTextPrimary)
-                        Text("Gemini 3.5 Flash API + reasoning rationale", fontSize = 11.sp, color = AppleTextSecondary)
+                        Text("Groq/Llama + fallback algoritma lokal", fontSize = 11.sp, color = AppleTextSecondary)
                     }
                     Box(
                         modifier = Modifier
@@ -407,7 +425,7 @@ fun SettingsScreen(
                             .background(AppleSystemGreen.copy(alpha = 0.16f))
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
-                        Text("Aktif", fontSize = 11.sp, color = AppleSystemGreen, fontWeight = FontWeight.SemiBold)
+                        Text("Siap", fontSize = 11.sp, color = AppleSystemGreen, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
@@ -424,15 +442,20 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Background Geofencing", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = AppleTextPrimary)
-                        Text("Foreground Location Service + Broadcast Receiver", fontSize = 11.sp, color = AppleTextSecondary)
+                        Text("Gunakan lokasi yang sudah kamu simpan dari GPS HP", fontSize = 11.sp, color = AppleTextSecondary)
                     }
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(AppleSystemGreen.copy(alpha = 0.16f))
+                            .background((if (locationReady) AppleSystemGreen else AppleSystemOrange).copy(alpha = 0.16f))
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
-                        Text("Aktif", fontSize = 11.sp, color = AppleSystemGreen, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            if (locationReady) "Aktif" else "Belum aktif",
+                            fontSize = 11.sp,
+                            color = if (locationReady) AppleSystemGreen else AppleSystemOrange,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
 
@@ -454,10 +477,15 @@ fun SettingsScreen(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(AppleSystemGreen.copy(alpha = 0.16f))
+                            .background((if (microphoneReady) AppleSystemGreen else AppleSystemOrange).copy(alpha = 0.16f))
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
-                        Text("Aktif", fontSize = 11.sp, color = AppleSystemGreen, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            if (microphoneReady) "Siap" else "Perlu izin",
+                            fontSize = 11.sp,
+                            color = if (microphoneReady) AppleSystemGreen else AppleSystemOrange,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }

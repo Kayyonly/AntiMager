@@ -13,7 +13,6 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.example.R
 import com.example.data.local.AppDatabase
 import com.example.util.LocationReminderManager
 import com.example.util.NotificationHelper
@@ -44,15 +43,14 @@ class LocationTrackerService : Service() {
         }
 
         fun stopService(context: Context) {
-            val intent = Intent(context, LocationTrackerService::class.java)
-            context.stopService(intent)
+            context.stopService(Intent(context, LocationTrackerService::class.java))
         }
     }
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
-    private var lastNotifiedAreaId: String? = null
-    private var lastNotifyTime: Long = 0L
+    private val insideAreaIds = mutableSetOf<String>()
+    private val lastEventTime = mutableMapOf<String, Long>()
 
     override fun onCreate() {
         super.onCreate()
@@ -61,17 +59,14 @@ class LocationTrackerService : Service() {
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
-                for (location in result.locations) {
-                    checkLocationAgainstGeofences(location)
-                }
+                result.locations.forEach(::checkLocationAgainstAreas)
             }
         }
     }
 
     @SuppressLint("MissingPermission")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val notification = buildForegroundNotification()
-        startForeground(NOTIFICATION_ID, notification)
+        startForeground(NOTIFICATION_ID, buildForegroundNotification())
         startLocationUpdates()
         return START_STICKY
     }
@@ -79,61 +74,92 @@ class LocationTrackerService : Service() {
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
         try {
-            val locationRequest = LocationRequest.Builder(Priority.PRIORITY_BALANCED_POWER_ACCURACY, 30_000L)
+            val locationRequest = LocationRequest.Builder(
+                Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                30_000L
+            )
                 .setMinUpdateIntervalMillis(15_000L)
                 .setMinUpdateDistanceMeters(25f)
                 .build()
 
-            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
-            Log.d(TAG, "Background location updates started successfully")
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback,
+                Looper.getMainLooper()
+            )
+            Log.d(TAG, "Real-device location fallback started")
         } catch (e: Exception) {
             Log.e(TAG, "Error starting location updates", e)
+            stopSelf()
         }
     }
 
-    private fun checkLocationAgainstGeofences(currentLocation: Location) {
+    private fun checkLocationAgainstAreas(currentLocation: Location) {
+        val configuredAreas = LocationReminderManager.getConfiguredAreas(applicationContext)
+            .filter { it.latitude != null && it.longitude != null }
+
+        if (configuredAreas.isEmpty()) return
+
         val now = System.currentTimeMillis()
-        for (area in LocationReminderManager.PRESET_LOCATIONS) {
-            val distance = FloatArray(1)
+        val currentlyInside = mutableSetOf<String>()
+
+        configuredAreas.forEach { area ->
+            val results = FloatArray(1)
             Location.distanceBetween(
                 currentLocation.latitude,
                 currentLocation.longitude,
-                area.latitude,
-                area.longitude,
-                distance
+                area.latitude!!,
+                area.longitude!!,
+                results
             )
 
-            if (distance[0] <= area.radiusMeters) {
-                // Inside area! Check if recently notified
-                if (lastNotifiedAreaId == area.id && (now - lastNotifyTime) < (15 * 60 * 1000L)) {
-                    return // Don't spam notifications within 15 minutes
+            if (results[0] <= area.radiusMeters) {
+                currentlyInside.add(area.id)
+                if (!insideAreaIds.contains(area.id)) {
+                    dispatchTransition(area.id, area.name, "ENTER", now)
                 }
-                lastNotifiedAreaId = area.id
-                lastNotifyTime = now
+            } else if (insideAreaIds.contains(area.id)) {
+                dispatchTransition(area.id, area.name, "EXIT", now)
+            }
+        }
 
-                Log.d(TAG, "User entered ${area.name} (distance: ${distance[0]}m)")
+        insideAreaIds.clear()
+        insideAreaIds.addAll(currentlyInside)
+    }
 
-                CoroutineScope(Dispatchers.IO).launch {
-                    try {
-                        val db = AppDatabase.getInstance(applicationContext)
-                        val matching = db.taskDao().getTasksWithLocation().filter {
-                            it.locationName?.contains(area.name, ignoreCase = true) == true ||
-                            area.name.contains(it.locationName ?: "", ignoreCase = true)
-                        }
+    private fun dispatchTransition(areaId: String, areaName: String, transition: String, now: Long) {
+        val eventKey = "$areaId:$transition"
+        val last = lastEventTime[eventKey] ?: 0L
+        if (now - last < 60_000L) return
+        lastEventTime[eventKey] = now
 
-                        if (matching.isNotEmpty()) {
-                            NotificationHelper.showLocationAlertNotification(
-                                context = applicationContext,
-                                locationName = area.name,
-                                taskCount = matching.size
-                            )
-                            NotificationHelper.showPersistentReminderNotification(applicationContext, matching.first())
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error checking matching tasks", e)
-                    }
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val db = AppDatabase.getInstance(applicationContext)
+                val matching = db.taskDao().getTasksWithLocation().filter { task ->
+                    val nameMatches =
+                        task.locationName?.equals(areaName, ignoreCase = true) == true ||
+                            areaName.contains(task.locationName ?: "", ignoreCase = true) ||
+                            (task.locationName?.contains(areaName, ignoreCase = true) == true)
+                    val triggerMatches =
+                        (task.locationTrigger ?: "ENTER").equals(transition, ignoreCase = true)
+                    nameMatches && triggerMatches
                 }
-                break
+
+                if (matching.isNotEmpty()) {
+                    NotificationHelper.showLocationAlertNotification(
+                        context = applicationContext,
+                        locationName = areaName,
+                        taskCount = matching.size,
+                        isEnter = transition == "ENTER"
+                    )
+                    NotificationHelper.showPersistentReminderNotification(
+                        applicationContext,
+                        matching.first()
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error handling location transition", e)
             }
         }
     }
@@ -142,20 +168,19 @@ class LocationTrackerService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Pemantau Lokasi Tugas",
+                "Pemantau Lokasi AntiMager",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Memantau lokasi secara pasif di background untuk memicu pengingat tugas"
+                description = "Dipakai saat Android perlu pemantauan lokasi cadangan untuk reminder."
             }
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
+            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }
 
     private fun buildForegroundNotification(): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("AntiMager Geofence Aktif 📍")
-            .setContentText("Memantau tugas saat kamu tiba di sekolah, rumah, atau minimarket")
+            .setContentTitle("Reminder lokasi aktif")
+            .setContentText("AntiMager memantau lokasi yang kamu simpan.")
             .setSmallIcon(android.R.drawable.ic_dialog_map)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -163,9 +188,8 @@ class LocationTrackerService : Service() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         fusedLocationClient.removeLocationUpdates(locationCallback)
-        Log.d(TAG, "Location tracking service stopped")
+        super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

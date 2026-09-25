@@ -6,6 +6,11 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import com.example.data.local.AppDatabase
+import com.example.util.LocationReminderManager
+import com.example.util.TaskReminderScheduler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class AntiMagerApp : Application() {
 
@@ -17,6 +22,14 @@ class AntiMagerApp : Application() {
         instance = this
         database = AppDatabase.getInstance(this)
         createNotificationChannels()
+
+        // Reconcile persisted tasks with Android alarms whenever the app process starts.
+        CoroutineScope(Dispatchers.IO).launch {
+            database.taskDao().getIncompleteTasks().forEach {
+                TaskReminderScheduler.schedule(this@AntiMagerApp, it)
+            }
+            LocationReminderManager.refreshGeofencesIfActive(this@AntiMagerApp)
+        }
     }
 
     private fun createNotificationChannels() {

@@ -10,11 +10,11 @@ class UserSettingsRepository(
 ) {
 
     val userSettingsFlow: Flow<UserSettingsEntity> = userSettingsDao.getUserSettingsFlow().map {
-        it ?: UserSettingsEntity(id = 1, userClass = "X IPA 2")
+        it ?: UserSettingsEntity(id = 1)
     }
 
     suspend fun getUserSettings(): UserSettingsEntity {
-        return userSettingsDao.getUserSettings() ?: UserSettingsEntity(id = 1, userClass = "X IPA 2").also {
+        return userSettingsDao.getUserSettings() ?: UserSettingsEntity(id = 1).also {
             userSettingsDao.saveUserSettings(it)
         }
     }

@@ -67,7 +67,8 @@ fun QuickAddBottomSheet(
         estimatedMinutes: Int,
         priority: String,
         isPersistent: Boolean,
-        locationName: String?
+        locationName: String?,
+        locationTrigger: String?
     ) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -79,8 +80,13 @@ fun QuickAddBottomSheet(
     var selectedPriority by remember { mutableStateOf("NORMAL") }
     var isPersistent by remember { mutableStateOf(true) }
     var selectedLocation by remember { mutableStateOf<String?>(null) }
+    var selectedLocationTrigger by remember { mutableStateOf("ENTER") }
 
     val now = Calendar.getInstance()
+    val limaMenitLagi = Calendar.getInstance().apply {
+        add(Calendar.MINUTE, 5)
+    }.timeInMillis
+
     val nantiSore = Calendar.getInstance().apply {
         set(Calendar.HOUR_OF_DAY, 17); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0)
         if (timeInMillis <= now.timeInMillis) add(Calendar.DAY_OF_YEAR, 1)
@@ -102,11 +108,11 @@ fun QuickAddBottomSheet(
     }.timeInMillis
 
     var deadlineMillis by remember { mutableLongStateOf(besokPagi) }
-    var selectedPresetIndex by remember { mutableIntStateOf(2) }
+    var selectedPresetIndex by remember { mutableIntStateOf(3) }
 
     val subjects = listOf("Umum", "Matematika", "IPA", "IPS", "B. Indonesia", "B. Inggris", "Belanja")
     val durationOptions = listOf(15, 30, 45, 60)
-    val locationPresets = listOf("Sekolah", "Rumah", "Perpustakaan", "Kampus")
+    val locationPresets = listOf("Sekolah", "Rumah", "Indomaret", "Perpustakaan")
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -242,6 +248,7 @@ fun QuickAddBottomSheet(
             )
             Spacer(modifier = Modifier.height(6.dp))
             val deadlineOptions = listOf(
+                Pair("5 Menit", limaMenitLagi),
                 Pair("Sore (17:00)", nantiSore),
                 Pair("Malam (20:00)", malamIni),
                 Pair("Besok Pagi (08:00)", besokPagi),
@@ -369,6 +376,46 @@ fun QuickAddBottomSheet(
                 }
             }
 
+            if (selectedLocation != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = "PICU SAAT",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppleTextSecondary,
+                    letterSpacing = 0.5.sp
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF1F1F22))
+                        .padding(2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    listOf("Masuk lokasi" to "ENTER", "Keluar lokasi" to "EXIT").forEach { (label, value) ->
+                        val isSelected = selectedLocationTrigger == value
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (isSelected) Color(0xFF323236) else Color.Transparent)
+                                .clickable { selectedLocationTrigger = value }
+                                .padding(vertical = 7.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (isSelected) AppleTextPrimary else AppleTextSecondary
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(14.dp))
 
             // Persistent Notification Switch
@@ -421,7 +468,8 @@ fun QuickAddBottomSheet(
                             estimatedMinutes,
                             selectedPriority,
                             isPersistent,
-                            selectedLocation
+                            selectedLocation,
+                            if (selectedLocation != null) selectedLocationTrigger else null
                         )
                     }
                 },

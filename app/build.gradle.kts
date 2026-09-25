@@ -31,6 +31,8 @@ android {
       keyAlias = "upload"
       keyPassword = System.getenv("KEY_PASSWORD")
     }
+    // Debug-only key committed intentionally so CI APK updates keep the same signature.
+    // Never use this key for Play Store / production releases.
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")
       storePassword = "android"

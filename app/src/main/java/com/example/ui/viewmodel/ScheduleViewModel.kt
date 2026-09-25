@@ -40,7 +40,7 @@ data class ScheduleUiState(
     val editingSchedule: ScheduleEntity? = null,
     val isFormOpen: Boolean = false,
     // User Settings / Profil Kelas
-    val userClass: String = "X IPA 2",
+    val userClass: String = "",
     // Scan states
     val isScanning: Boolean = false,
     val scanErrorMessage: String? = null,
@@ -92,7 +92,7 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
     private val _isFormOpen = MutableStateFlow(false)
 
     // User Class Setting State
-    private val _userClass = MutableStateFlow("X IPA 2")
+    private val _userClass = MutableStateFlow("")
 
     // Scan Vision state flows
     private val _isScanning = MutableStateFlow(false)
@@ -342,15 +342,9 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
             if (currentBitmap != null) {
                 scanSchedulePhoto(currentBitmap, customTargetClass = chosenClass)
             } else {
-                // If bitmap not in memory, generate fallback items for that class
-                val fallback = visionService.generateFallbackScanResult(chosenClass)
-                _isMultiClassDetected.value = fallback.isMultiClass
-                _detectedClassesInPhoto.value = fallback.detectedClasses
-                _targetClassFoundInPhoto.value = true
-                _matchedClass.value = chosenClass
-                _detectionNote.value = fallback.detectionNote
-                _extractedItems.value = fallback.items
-                _isConfirmDialogVisible.value = true
+                _extractedItems.value = emptyList()
+                _isConfirmDialogVisible.value = false
+                _scanErrorMessage.value = "Foto jadwal sudah tidak tersedia. Pilih fotonya lagi untuk scan ulang."
             }
         }
     }

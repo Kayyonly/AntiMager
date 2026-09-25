@@ -9,11 +9,12 @@ import com.example.data.ai.ParsedTaskResult
 import com.example.data.local.entity.TaskEntity
 import com.example.data.repository.TaskRepository
 import com.example.data.service.AiPrioritySortResult
-import com.example.data.service.GeminiPriorityService
+import com.example.data.service.GroqPriorityService
 import com.example.util.LocationReminderManager
 import com.example.util.NotificationHelper
 import com.example.util.SmartPrioritySorter
 import com.example.util.SortMode
+import com.example.util.TaskReminderScheduler
 import com.example.widget.AntiMagerWidgetProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -168,15 +169,15 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         // Automatically perform smart priority sorting on startup
-        triggerGeminiAiSort()
+        triggerGroqAiSort()
     }
 
-    fun triggerGeminiAiSort() {
+    fun triggerGroqAiSort() {
         viewModelScope.launch {
             _isAiSortingLoading.value = true
             try {
                 val currentTasks = repository.allTasks.first()
-                val result = GeminiPriorityService.sortTasksWithGemini(currentTasks)
+                val result = GroqPriorityService.sortTasksWithGroq(currentTasks)
                 _aiSortResult.value = result
             } catch (e: Exception) {
                 // ignore
@@ -189,7 +190,7 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
     fun setSortMode(mode: SortMode) {
         _sortMode.value = mode
         if (mode == SortMode.SMART_AI && _aiSortResult.value == null) {
-            triggerGeminiAiSort()
+            triggerGroqAiSort()
         }
     }
 
@@ -207,8 +208,12 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
             repository.setTaskCompleted(task.id, newCompleted)
             if (newCompleted) {
                 NotificationHelper.dismissNotification(getApplication(), task.id)
+                TaskReminderScheduler.cancel(getApplication(), task.id)
+            } else {
+                TaskReminderScheduler.schedule(getApplication(), task.copy(isCompleted = false))
             }
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
+            triggerGroqAiSort()
         }
     }
 
@@ -220,10 +225,10 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
                 deadlineEpochMillis = newDeadline,
                 snoozeCount = task.snoozeCount + 1
             )
-            if (task.isPersistent) {
-                NotificationHelper.showPersistentReminderNotification(getApplication(), updated)
-            }
+            NotificationHelper.dismissNotification(getApplication(), task.id)
+            TaskReminderScheduler.schedule(getApplication(), updated)
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
+            triggerGroqAiSort()
         }
     }
 
@@ -231,7 +236,9 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.deleteTask(task)
             NotificationHelper.dismissNotification(getApplication(), task.id)
+            TaskReminderScheduler.cancel(getApplication(), task.id)
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
+            triggerGroqAiSort()
         }
     }
 
@@ -247,7 +254,8 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         estimatedMinutes: Int = 30,
         priority: String = "MEDIUM",
         isPersistent: Boolean = true,
-        locationName: String? = null
+        locationName: String? = null,
+        locationTrigger: String? = null
     ) {
         viewModelScope.launch {
             val task = TaskEntity(
@@ -259,16 +267,18 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
                 priority = priority,
                 isCompleted = false,
                 isPersistent = isPersistent,
-                locationName = locationName?.trim()?.ifBlank { null }
+                locationName = locationName?.trim()?.ifBlank { null },
+                locationTrigger = if (locationName.isNullOrBlank()) null else (locationTrigger ?: "ENTER")
             )
             val newId = repository.insertTask(task)
-            if (isPersistent) {
-                val createdTask = task.copy(id = newId)
-                NotificationHelper.showPersistentReminderNotification(getApplication(), createdTask)
+            val createdTask = task.copy(id = newId)
+            TaskReminderScheduler.schedule(getApplication(), createdTask)
+            if (!createdTask.locationName.isNullOrBlank()) {
+                LocationReminderManager.refreshGeofencesIfActive(getApplication())
             }
             AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
             // Re-run AI sort to factor in the new task
-            triggerGeminiAiSort()
+            triggerGroqAiSort()
         }
     }
 

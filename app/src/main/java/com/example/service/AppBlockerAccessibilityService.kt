@@ -9,6 +9,7 @@ import android.view.accessibility.AccessibilityEvent
 import com.example.data.local.AppDatabase
 import com.example.data.repository.AppBlockerManager
 import com.example.ui.activity.AppBlockerOverlayActivity
+import com.example.util.SmartPrioritySorter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -25,10 +26,14 @@ class AppBlockerAccessibilityService : AccessibilityService() {
 
         val packageName = event.packageName?.toString() ?: return
 
-        // Never block our own app or system UI / home launcher
-        if (packageName == this.packageName ||
+        // Never interfere with AntiMager itself, launcher, settings, permission dialogs or System UI.
+        if (
+            packageName == this.packageName ||
             packageName.contains("systemui", ignoreCase = true) ||
-            packageName.contains("launcher", ignoreCase = true)
+            packageName.contains("launcher", ignoreCase = true) ||
+            packageName.contains("permissioncontroller", ignoreCase = true) ||
+            packageName.contains("packageinstaller", ignoreCase = true) ||
+            packageName == "com.android.settings"
         ) {
             return
         }
@@ -62,17 +67,22 @@ class AppBlockerAccessibilityService : AccessibilityService() {
             try {
                 val db = AppDatabase.getInstance(applicationContext)
                 val incompleteTasks = db.taskDao().getIncompleteTasks()
+                val now = System.currentTimeMillis()
+                val blockingTasks = incompleteTasks.filter { task ->
+                    task.priority.equals("HIGH", ignoreCase = true) ||
+                        SmartPrioritySorter.calculateUrgency(task, now).score >= 60.0
+                }
 
-                if (incompleteTasks.isNotEmpty()) {
+                if (blockingTasks.isNotEmpty()) {
                     val appName = AppBlockerManager.getAppName(applicationContext, packageName)
-                    Log.d("AppBlocker", "Blocking app $packageName ($appName) - ${incompleteTasks.size} tasks pending")
+                    Log.d("AppBlocker", "Blocking app $packageName ($appName) - ${blockingTasks.size} priority tasks pending")
 
                     Handler(Looper.getMainLooper()).post {
                         val overlayIntent = Intent(applicationContext, AppBlockerOverlayActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                             putExtra(AppBlockerOverlayActivity.EXTRA_BLOCKED_PACKAGE, packageName)
                             putExtra(AppBlockerOverlayActivity.EXTRA_BLOCKED_APP_NAME, appName)
-                            putExtra(AppBlockerOverlayActivity.EXTRA_PENDING_TASK_COUNT, incompleteTasks.size)
+                            putExtra(AppBlockerOverlayActivity.EXTRA_PENDING_TASK_COUNT, blockingTasks.size)
                         }
                         startActivity(overlayIntent)
                     }
