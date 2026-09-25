@@ -102,16 +102,15 @@ fun LocationAndSettingsScreen(
         item {
             Column {
                 Text(
-                    text = "KONTROL & PROTEKSI",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = IosGray1,
-                    letterSpacing = 0.5.sp
+                    text = "Fokus & privasi",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = IosTextSecondary
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Proteksi AntiMager",
-                    fontSize = 32.sp,
+                    text = "Proteksi",
+                    fontSize = 34.sp,
                     fontWeight = FontWeight.Bold,
                     color = IosTextPrimary,
                     letterSpacing = (-0.8).sp
@@ -137,7 +136,7 @@ fun LocationAndSettingsScreen(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(IosBlue.copy(alpha = 0.12f)),
+                            .background(Color(0x1FFFFFFF)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -152,13 +151,13 @@ fun LocationAndSettingsScreen(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Profil Kelas & Pemindai AI",
+                            text = "Profil & Pemindai Jadwal",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = IosTextPrimary
                         )
                         Text(
-                            text = "Atur \"Kelas Saya\" & scan jadwal multi-kelas",
+                            text = "Kelas, pemindaian foto, dan pengaturan sistem",
                             fontSize = 13.sp,
                             color = IosTextSecondary
                         )
@@ -178,7 +177,7 @@ fun LocationAndSettingsScreen(
         // FEATURE 1: APP BLOCKER (ACCESSIBILITY SERVICE)
         // ==========================================
         item {
-            IosSectionHeader(title = "1. App Blocker (Accessibility Shield)")
+            IosSectionHeader(title = "App Blocker")
 
             IosCard(elevation = 1.5.dp) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -371,7 +370,7 @@ fun LocationAndSettingsScreen(
         // FEATURE 3: BACKGROUND GEOFENCING (REMINDER LOKASI)
         // ==========================================
         item {
-            IosSectionHeader(title = "2. Reminder Lokasi (Real Background Geofencing)")
+            IosSectionHeader(title = "Reminder Lokasi")
 
             IosCard(elevation = 1.5.dp) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -500,7 +499,7 @@ fun LocationAndSettingsScreen(
         // FEATURE 4: VOICE COMMAND (SHORTCUTS & WIDGET)
         // ==========================================
         item {
-            IosSectionHeader(title = "3. Voice Command (Jalan Pintas Luar App)")
+            IosSectionHeader(title = "Voice Command")
 
             IosCard(elevation = 1.5.dp) {
                 Column(modifier = Modifier.padding(16.dp)) {
