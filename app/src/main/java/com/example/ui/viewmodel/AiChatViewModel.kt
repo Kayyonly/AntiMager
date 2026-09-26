@@ -153,12 +153,18 @@ class AiChatViewModel(application: Application) : AndroidViewModel(application) 
     private fun localChatFallback(text: String): String {
         val lower = text.lowercase()
         return when {
-            lower in setOf("hai", "halo", "hi", "hey", "p", "hii", "hallo") ->
-                "Hai. Mau bikin pengingat, atur jadwal, atau fokus ke tugas tertentu?"
+            lower in setOf("hai", "halo", "hi", "hey", "p", "hii", "hallo", "oi", "oe", "woi", "bro", "cuy") ->
+                listOf(
+                    "Oi, ada apa?",
+                    "Yo. Mau ngobrol atau ada tugas yang mau diberesin?",
+                    "Hadir. Ada yang bisa gue bantu?"
+                ).random()
             lower.contains("ai apa") || lower.contains("model apa") || lower.contains("pake ai") ->
-                "Untuk teks aku pakai Groq dengan Llama 3.3 70B. Scan foto jadwal pakai Gemini Vision."
+                "Untuk chat teks aku pakai Groq dengan Llama 3.3 70B. Scan foto jadwal pakai Gemini Vision."
+            lower.contains("ngobrol") || lower.contains("chat") ->
+                "Boleh. Ngobrol aja, gue nggak bakal ubah percakapan biasa jadi tugas kecuali kamu memang minta dibuatkan pengingat."
             else ->
-                "Aku bisa bantu ngobrol singkat, tapi paling berguna buat tugas dan pengingat. Contoh: “PR IPS besok jam 8 pagi”."
+                "Gue nangkep itu sebagai obrolan biasa. Lanjut aja—kalau mau bikin tugas, tinggal bilang contohnya “PR IPS besok jam 8 pagi”."
         }
     }
 
