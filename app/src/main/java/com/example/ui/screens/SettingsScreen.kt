@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mic
@@ -55,6 +56,7 @@ import com.example.data.repository.AppBlockerManager
 import com.example.ui.components.GlassButton
 import com.example.ui.components.GlassButtonVariant
 import com.example.ui.components.GlassCard
+import com.example.ui.components.GlassIconButton
 import com.example.ui.components.IosSectionHeader
 import com.example.ui.components.LiquidGlassTokens
 import com.example.ui.theme.AppleSystemBlue
@@ -103,15 +105,14 @@ fun SettingsScreen(
     }
 
     val quickClasses = listOf(
-        "VII.1", "VII.2", "VII.3", "VII.4",
-        "VIII.1", "VIII.2", "VIII.3", "VIII.4",
-        "IX.1", "IX.2", "IX.3", "IX.4", "IX.5", "IX.6", "IX.7", "IX.8", "IX.9"
+        "X IPA 1", "X IPA 2", "X IPS 1", "X IPS 2",
+        "XI MIPA 1", "XI MIPA 2", "XI IPS 1", "XII MIPA 1",
+        "7A", "7B", "8A", "8B", "9A", "9B"
     )
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(LiquidDarkBackground)
             .padding(horizontal = 16.dp)
             .verticalScroll(rememberScrollState())
     ) {
@@ -123,39 +124,30 @@ fun SettingsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (onBack != null) {
-                IconButton(
+                GlassIconButton(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Kembali",
                     onClick = onBack,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(GlassLayer1)
-                        .border(0.8.dp, GlassBorderSubtle, CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Kembali",
-                        tint = AppleSystemBlue,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
+                    tint = AppleSystemBlue,
+                    containerColor = Color(0x1FFFFFFF)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
             }
 
             Column {
                 Text(
-                    text = "PENGATURAN",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppleTextSecondary,
-                    letterSpacing = 0.6.sp
+                    text = "AntiMager",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = AppleTextSecondary
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(1.dp))
                 Text(
-                    text = "Profil & Sistem",
-                    fontSize = 30.sp,
+                    text = "Pengaturan",
+                    fontSize = 34.sp,
                     fontWeight = FontWeight.Bold,
                     color = AppleTextPrimary,
-                    letterSpacing = (-0.6).sp
+                    letterSpacing = (-0.8).sp
                 )
             }
         }
@@ -206,7 +198,7 @@ fun SettingsScreen(
                 OutlinedTextField(
                     value = uiState.userClass,
                     onValueChange = { viewModel.onClassChange(it) },
-                    placeholder = { Text("Contoh: IX.7 atau X IPA 2", color = AppleTextPlaceholder, fontSize = 14.sp) },
+                    placeholder = { Text("Contoh: X IPA 2 atau XI MIPA 1", color = AppleTextPlaceholder, fontSize = 14.sp) },
                     label = { Text("Nama Kelas Kamu", fontSize = 12.sp) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(LiquidGlassTokens.RadiusInput),
@@ -242,12 +234,12 @@ fun SettingsScreen(
                         val isSelected = uiState.userClass.equals(cls, ignoreCase = true)
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(11.dp))
                                 .background(if (isSelected) AppleSystemBlue else GlassLayer1)
                                 .border(
                                     0.8.dp,
                                     if (isSelected) AppleSystemBlue else GlassBorderSubtle,
-                                    RoundedCornerShape(8.dp)
+                                    RoundedCornerShape(11.dp)
                                 )
                                 .clickable { viewModel.onClassChange(cls) }
                                 .padding(horizontal = 10.dp, vertical = 5.dp)
@@ -299,37 +291,74 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(18.dp))
 
         // SECTION 2: AI & ENGINE INTEGRATION
-        IosSectionHeader(title = "AI Intelligence Engine")
+        IosSectionHeader(title = "AI")
 
         GlassCard(elevation = 2.dp) {
             Column(modifier = Modifier.padding(16.dp)) {
+                // Provider 1: Groq Llama 3.3 70B
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0x225E5CE6))
-                            .border(0.8.dp, AppleSystemIndigo.copy(alpha = 0.4f), CircleShape),
+                            .background(Color(0x1FFFFFFF))
+                            .border(0.7.dp, GlassBorderSubtle, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.AutoAwesome,
+                            imageVector = Icons.Default.Bolt,
                             contentDescription = null,
-                            tint = AppleSystemIndigo,
+                            tint = AppleSystemBlue,
                             modifier = Modifier.size(20.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Groq Text + Gemini Vision",
+                            text = "Groq (Llama 3.3 70B)",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = AppleTextPrimary,
                             letterSpacing = (-0.2).sp
                         )
                         Text(
-                            text = "Groq/Llama untuk teks • Gemini hanya untuk scan foto jadwal",
+                            text = "Mesin teks ultra-cepat: AI Chat, Parser & Smart Priority",
+                            fontSize = 12.sp,
+                            color = AppleTextSecondary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Provider 2: Google Gemini Vision
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color(0x1FFFFFFF))
+                            .border(0.7.dp, GlassBorderSubtle, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = AppleTextSecondary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Google Gemini (Vision)",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppleTextPrimary,
+                            letterSpacing = (-0.2).sp
+                        )
+                        Text(
+                            text = "Mesin visual: Scan foto jadwal pelajaran sekolah",
                             fontSize = 12.sp,
                             color = AppleTextSecondary
                         )
@@ -417,15 +446,20 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Smart Priority Sorting", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = AppleTextPrimary)
-                        Text("Groq/Llama + fallback algoritma lokal", fontSize = 11.sp, color = AppleTextSecondary)
+                        Text("Groq Llama 3.3 70B + reasoning rationale", fontSize = 11.sp, color = AppleTextSecondary)
                     }
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(AppleSystemGreen.copy(alpha = 0.16f))
+                            .background((if (true) AppleSystemGreen else AppleSystemOrange).copy(alpha = 0.16f))
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
-                        Text("Siap", fontSize = 11.sp, color = AppleSystemGreen, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            if (true) "Siap" else "Tidak siap",
+                            fontSize = 11.sp,
+                            color = if (true) AppleSystemGreen else AppleSystemOrange,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
 
@@ -442,7 +476,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Background Geofencing", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = AppleTextPrimary)
-                        Text("Gunakan lokasi yang sudah kamu simpan dari GPS HP", fontSize = 11.sp, color = AppleTextSecondary)
+                        Text("Foreground Location Service + Broadcast Receiver", fontSize = 11.sp, color = AppleTextSecondary)
                     }
                     Box(
                         modifier = Modifier
