@@ -218,7 +218,7 @@ fun AiChatScreen(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Llama 3.3 • Groq",
+                        text = "GPT-OSS 120B • Groq",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = AppleTextPrimary
