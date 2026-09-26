@@ -36,7 +36,7 @@ data class AiPrioritySortResult(
 object GroqPriorityService {
 
     private const val TAG = "GroqPriorityService"
-    private const val DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+    private const val DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
@@ -131,6 +131,8 @@ object GroqPriorityService {
             val requestJson = JSONObject().apply {
                 put("model", model)
                 put("temperature", 0.2)
+                put("reasoning_effort", "low")
+                put("reasoning_format", "hidden")
                 put("response_format", JSONObject().apply { put("type", "json_object") })
                 put("messages", JSONArray().apply {
                     put(JSONObject().apply {
