@@ -79,6 +79,22 @@ object LiquidGlassTokens {
     val Space20: Dp = 20.dp
     val Space24: Dp = 24.dp
     val Space32: Dp = 32.dp
+
+    // Compatibility brushes used by the latest Liquid Glass Quick Add UI.
+    val GlassSpecularBorderBrush = Brush.verticalGradient(
+        listOf(
+            Color(0x5CFFFFFF),
+            Color(0x25FFFFFF),
+            Color(0x0FFFFFFF)
+        )
+    )
+    val GlassCardSheenBrush = Brush.verticalGradient(
+        listOf(
+            Color(0x22FFFFFF),
+            Color(0x0BFFFFFF),
+            Color(0x00FFFFFF)
+        )
+    )
 }
 
 enum class GlassDepth(val level: Int) {
