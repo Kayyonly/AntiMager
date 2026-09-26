@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,10 +29,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EditCalendar
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -50,16 +49,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.components.GlassCard
-import com.example.ui.components.LiquidGlassTokens
 import com.example.ui.theme.AppleSystemBlue
 import com.example.ui.theme.AppleSystemGreen
 import com.example.ui.theme.AppleSystemOrange
@@ -68,15 +62,15 @@ import com.example.ui.theme.AppleTextMuted
 import com.example.ui.theme.AppleTextPlaceholder
 import com.example.ui.theme.AppleTextPrimary
 import com.example.ui.theme.AppleTextSecondary
-import com.example.ui.theme.AppleTextTertiary
-import com.example.ui.theme.GlassBorderHighlight
-import com.example.ui.theme.GlassBorderStandard
-import com.example.ui.theme.GlassBorderSubtle
-import com.example.ui.theme.GlassLayer1
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+
+private val SheetBackground = Color(0xFF0D1016)
+private val SectionBackground = Color(0xFF151922)
+private val ControlBackground = Color(0xFF20252F)
+private val Hairline = Color(0x24FFFFFF)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,85 +100,66 @@ fun QuickAddBottomSheet(
     var selectedLocation by remember { mutableStateOf<String?>(null) }
     var selectedLocationTrigger by remember { mutableStateOf("ENTER") }
 
-    // Custom subject input state
     var showCustomSubjectInput by remember { mutableStateOf(false) }
     var customSubjectText by remember { mutableStateOf("") }
 
-    val subjectsList = remember {
+    val subjects = remember {
         mutableStateListOf(
             "Umum", "Matematika", "IPA", "IPS", "B. Indonesia", "B. Inggris",
-            "PKN", "Penjas", "Seni Budaya", "Agama", "Informatika", "Sejarah",
-            "Fisika", "Kimia", "Biologi", "Geografi", "Ekonomi", "Sosiologi",
-            "Belanja", "Rumah"
+            "PKN", "Agama", "Informatika", "Seni Budaya", "Penjas", "Sejarah"
         )
     }
 
-    // Date calculations for quick presets
     val now = Calendar.getInstance()
-    val nantiSore = Calendar.getInstance().apply {
-        set(Calendar.HOUR_OF_DAY, 17); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-        if (timeInMillis <= now.timeInMillis) add(Calendar.DAY_OF_YEAR, 1)
-    }.timeInMillis
 
-    val malamIni = Calendar.getInstance().apply {
-        set(Calendar.HOUR_OF_DAY, 20); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-        if (timeInMillis <= now.timeInMillis) add(Calendar.DAY_OF_YEAR, 1)
-    }.timeInMillis
+    fun preset(dayOffset: Int, hour: Int, minute: Int = 0): Long {
+        return Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, dayOffset)
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            if (timeInMillis <= now.timeInMillis) {
+                add(Calendar.DAY_OF_YEAR, 1)
+            }
+        }.timeInMillis
+    }
 
-    val besokPagi = Calendar.getInstance().apply {
-        add(Calendar.DAY_OF_YEAR, 1)
-        set(Calendar.HOUR_OF_DAY, 8); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-    }.timeInMillis
+    val deadlineOptions = listOf(
+        "Sore ini" to preset(0, 17),
+        "Malam ini" to preset(0, 20),
+        "Besok pagi" to preset(1, 8),
+        "Besok sore" to preset(1, 16),
+        "Lusa" to preset(2, 10)
+    )
 
-    val besokSore = Calendar.getInstance().apply {
-        add(Calendar.DAY_OF_YEAR, 1)
-        set(Calendar.HOUR_OF_DAY, 16); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-    }.timeInMillis
-
-    val lusa = Calendar.getInstance().apply {
-        add(Calendar.DAY_OF_YEAR, 2)
-        set(Calendar.HOUR_OF_DAY, 10); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-    }.timeInMillis
-
-    val mingguDepan = Calendar.getInstance().apply {
-        add(Calendar.DAY_OF_YEAR, 7)
-        set(Calendar.HOUR_OF_DAY, 8); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-    }.timeInMillis
-
-    var deadlineMillis by remember { mutableLongStateOf(besokPagi) }
-    var selectedPresetIndex by remember { mutableIntStateOf(2) } // default: Besok Pagi
+    var deadlineMillis by remember { mutableLongStateOf(deadlineOptions[2].second) }
+    var selectedPresetIndex by remember { mutableIntStateOf(2) }
 
     val durationOptions = listOf(15, 30, 45, 60, 90, 120)
     val locationPresets = listOf("Sekolah", "Rumah", "Perpustakaan", "Indomaret")
 
-    // Formatter for selected deadline display
-    val deadlineDisplayString = remember(deadlineMillis) {
-        val sdf = SimpleDateFormat("EEEE, dd MMMM yyyy • HH:mm 'WIB'", Locale("id", "ID"))
-        sdf.format(Date(deadlineMillis))
+    val deadlineDisplay = remember(deadlineMillis) {
+        SimpleDateFormat("EEE, dd MMM yyyy • HH:mm", Locale("id", "ID"))
+            .format(Date(deadlineMillis))
     }
 
-    // Helper functions for DatePicker & TimePicker
     fun openDatePicker() {
         val cal = Calendar.getInstance().apply { timeInMillis = deadlineMillis }
-        val currentYear = cal.get(Calendar.YEAR)
-        val currentMonth = cal.get(Calendar.MONTH)
-        val currentDay = cal.get(Calendar.DAY_OF_MONTH)
-
         DatePickerDialog(
             context,
-            { _, year, month, dayOfMonth ->
-                val newCal = Calendar.getInstance().apply {
+            { _, year, month, day ->
+                deadlineMillis = Calendar.getInstance().apply {
                     timeInMillis = deadlineMillis
                     set(Calendar.YEAR, year)
                     set(Calendar.MONTH, month)
-                    set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                }
-                deadlineMillis = newCal.timeInMillis
-                selectedPresetIndex = -1 // Marked as custom
+                    set(Calendar.DAY_OF_MONTH, day)
+                }.timeInMillis
+                selectedPresetIndex = -1
             },
-            currentYear,
-            currentMonth,
-            currentDay
+            cal.get(Calendar.YEAR),
+            cal.get(Calendar.MONTH),
+            cal.get(Calendar.DAY_OF_MONTH)
         ).apply {
             datePicker.minDate = System.currentTimeMillis() - 1000L
             show()
@@ -193,69 +168,90 @@ fun QuickAddBottomSheet(
 
     fun openTimePicker() {
         val cal = Calendar.getInstance().apply { timeInMillis = deadlineMillis }
-        val currentHour = cal.get(Calendar.HOUR_OF_DAY)
-        val currentMinute = cal.get(Calendar.MINUTE)
-
         TimePickerDialog(
             context,
-            { _, hourOfDay, minute ->
-                val newCal = Calendar.getInstance().apply {
+            { _, hour, minute ->
+                deadlineMillis = Calendar.getInstance().apply {
                     timeInMillis = deadlineMillis
-                    set(Calendar.HOUR_OF_DAY, hourOfDay)
+                    set(Calendar.HOUR_OF_DAY, hour)
                     set(Calendar.MINUTE, minute)
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
-                }
-                deadlineMillis = newCal.timeInMillis
-                selectedPresetIndex = -1 // Marked as custom
+                }.timeInMillis
+                selectedPresetIndex = -1
             },
-            currentHour,
-            currentMinute,
+            cal.get(Calendar.HOUR_OF_DAY),
+            cal.get(Calendar.MINUTE),
             true
         ).show()
+    }
+
+    @Composable
+    fun SectionCard(content: @Composable () -> Unit) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(SectionBackground)
+                .border(0.7.dp, Hairline, RoundedCornerShape(18.dp))
+                .padding(14.dp)
+        ) {
+            content()
+        }
+    }
+
+    @Composable
+    fun SectionTitle(text: String) {
+        Text(
+            text = text,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = AppleTextSecondary,
+            letterSpacing = 0.4.sp
+        )
     }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-        containerColor = Color(0xE814171D),
-        scrimColor = Color.Black.copy(alpha = 0.58f),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        containerColor = SheetBackground,
+        scrimColor = Color.Black.copy(alpha = 0.64f),
         dragHandle = {
             Box(
                 modifier = Modifier
-                    .padding(top = 10.dp, bottom = 6.dp)
-                    .width(40.dp)
-                    .height(4.5.dp)
+                    .padding(top = 10.dp, bottom = 4.dp)
+                    .width(38.dp)
+                    .height(4.dp)
                     .clip(CircleShape)
-                    .background(Color(0x4AFFFFFF))
+                    .background(Color(0x50FFFFFF))
             )
         }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 28.dp)
         ) {
-            // Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+                    .padding(top = 4.dp, bottom = 14.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
                     Text(
                         text = "Tugas Baru",
-                        fontSize = 22.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
-                        color = AppleTextPrimary,
-                        letterSpacing = (-0.4).sp
+                        color = AppleTextPrimary
                     )
                     Text(
-                        text = "Cepat, sederhana, dan langsung tersimpan",
+                        text = "Tambahkan detail yang memang dibutuhkan.",
                         fontSize = 12.sp,
                         color = AppleTextSecondary
                     )
@@ -263,10 +259,9 @@ fun QuickAddBottomSheet(
 
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(34.dp)
                         .clip(CircleShape)
-                        .background(Color(0x28FFFFFF))
-                        .border(0.7.dp, LiquidGlassTokens.GlassSpecularBorderBrush, CircleShape)
+                        .background(ControlBackground)
                         .clickable { onDismiss() },
                     contentAlignment = Alignment.Center
                 ) {
@@ -274,307 +269,218 @@ fun QuickAddBottomSheet(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Tutup",
                         tint = AppleTextSecondary,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(17.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // SECTION 1: Judul & Catatan (iOS Liquid Glass Inset Card)
-            GlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                elevation = 2.dp
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                        text = "DETAIL TUGAS",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppleTextSecondary,
-                        letterSpacing = 0.5.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+            SectionCard {
+                Column {
+                    SectionTitle("DETAIL TUGAS")
+                    Spacer(Modifier.height(9.dp))
 
                     OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
-                        placeholder = { Text("Apa yang harus dikerjakan?", color = AppleTextPlaceholder, fontSize = 15.sp) },
+                        placeholder = {
+                            Text("Apa yang harus dikerjakan?", color = AppleTextPlaceholder)
+                        },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = AppleSystemBlue,
-                            unfocusedBorderColor = Color(0x18FFFFFF),
-                            focusedContainerColor = Color(0x18FFFFFF),
-                            unfocusedContainerColor = Color(0x10FFFFFF),
+                            unfocusedBorderColor = Hairline,
+                            focusedContainerColor = ControlBackground,
+                            unfocusedContainerColor = ControlBackground,
                             focusedTextColor = AppleTextPrimary,
                             unfocusedTextColor = AppleTextPrimary
-                        ),
-                        singleLine = true
+                        )
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(Modifier.height(8.dp))
 
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
-                        placeholder = { Text("Catatan / instruksi guru (opsional)", color = AppleTextPlaceholder, fontSize = 13.sp) },
+                        placeholder = {
+                            Text("Catatan (opsional)", color = AppleTextPlaceholder)
+                        },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp),
+                        maxLines = 2,
+                        shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = AppleSystemBlue,
-                            unfocusedBorderColor = Color(0x18FFFFFF),
-                            focusedContainerColor = Color(0x18FFFFFF),
-                            unfocusedContainerColor = Color(0x10FFFFFF),
+                            unfocusedBorderColor = Hairline,
+                            focusedContainerColor = ControlBackground,
+                            unfocusedContainerColor = ControlBackground,
                             focusedTextColor = AppleTextPrimary,
                             unfocusedTextColor = AppleTextPrimary
-                        ),
-                        maxLines = 2
+                        )
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // SECTION 2: Kategori / Mapel (Comprehensive Preset + Custom Input)
-            GlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                elevation = 2.dp
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
+            SectionCard {
+                Column {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                    Text(
-                        text = "MATA PELAJARAN / KATEGORI",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppleTextSecondary,
-                        letterSpacing = 0.5.sp
-                    )
-                    Text(
-                        text = selectedSubject,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AppleSystemBlue
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Subject Pill Chips Scroll
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(7.dp)
-                ) {
-                    // + Custom chip button
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(if (showCustomSubjectInput) AppleSystemOrange.copy(alpha = 0.2f) else Color(0xFF2A2A2E))
-                            .border(
-                                0.8.dp,
-                                if (showCustomSubjectInput) AppleSystemOrange else Color(0x30FFFFFF),
-                                RoundedCornerShape(10.dp)
-                            )
-                            .clickable {
-                                showCustomSubjectInput = !showCustomSubjectInput
-                            }
-                            .padding(horizontal = 12.dp, vertical = 7.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = null,
-                                tint = if (showCustomSubjectInput) AppleSystemOrange else AppleTextPrimary,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Kustom",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (showCustomSubjectInput) AppleSystemOrange else AppleTextPrimary
-                            )
-                        }
+                        SectionTitle("KATEGORI")
+                        Text(
+                            text = selectedSubject,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppleSystemBlue
+                        )
                     }
 
-                    // Existing subject chips
-                    subjectsList.forEach { subj ->
-                        val isSelected = selectedSubject == subj
+                    Spacer(Modifier.height(9.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(7.dp)
+                    ) {
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(if (isSelected) AppleSystemBlue else Color(0xFF26262A))
-                                .border(
-                                    0.6.dp,
-                                    if (isSelected) AppleSystemBlue else Color(0x18FFFFFF),
-                                    RoundedCornerShape(10.dp)
-                                )
-                                .clickable {
-                                    selectedSubject = subj
-                                    showCustomSubjectInput = false
-                                }
-                                .padding(horizontal = 12.dp, vertical = 7.dp)
+                                .background(ControlBackground)
+                                .clickable { showCustomSubjectInput = !showCustomSubjectInput }
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
                         ) {
-                            Text(
-                                text = subj,
-                                fontSize = 12.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) Color.White else AppleTextSecondary
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = AppleTextPrimary,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text("Kustom", color = AppleTextPrimary, fontSize = 12.sp)
+                            }
+                        }
+
+                        subjects.forEach { subject ->
+                            val selected = subject == selectedSubject
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (selected) AppleSystemBlue else ControlBackground)
+                                    .clickable {
+                                        selectedSubject = subject
+                                        showCustomSubjectInput = false
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = subject,
+                                    color = if (selected) Color.White else AppleTextSecondary,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                                )
+                            }
                         }
                     }
-                }
 
-                // Inline Custom Subject Input Box
-                AnimatedVisibility(visible = showCustomSubjectInput) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 10.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFF26262A))
-                            .padding(10.dp)
-                    ) {
-                        Text(
-                            text = "Tambah Nama Mapel Baru:",
-                            fontSize = 12.sp,
-                            color = AppleTextSecondary
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
+                    AnimatedVisibility(showCustomSubjectInput) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             OutlinedTextField(
                                 value = customSubjectText,
                                 onValueChange = { customSubjectText = it },
-                                placeholder = { Text("cth: Mandarin, Robotika, Teater", fontSize = 13.sp, color = AppleTextPlaceholder) },
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp),
                                 singleLine = true,
+                                placeholder = { Text("Nama kategori", color = AppleTextPlaceholder) },
+                                shape = RoundedCornerShape(10.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = AppleSystemBlue,
-                                    unfocusedBorderColor = Color(0x20FFFFFF),
-                                    focusedContainerColor = Color(0xFF1E1E22),
-                                    unfocusedContainerColor = Color(0xFF1E1E22),
+                                    unfocusedBorderColor = Hairline,
+                                    focusedContainerColor = ControlBackground,
+                                    unfocusedContainerColor = ControlBackground,
                                     focusedTextColor = AppleTextPrimary,
                                     unfocusedTextColor = AppleTextPrimary
                                 )
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(Modifier.width(8.dp))
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(if (customSubjectText.isNotBlank()) AppleSystemBlue else Color(0xFF333338))
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (customSubjectText.isNotBlank()) AppleSystemBlue else ControlBackground)
                                     .clickable(enabled = customSubjectText.isNotBlank()) {
-                                        val trimmed = customSubjectText.trim()
-                                        if (trimmed.isNotBlank()) {
-                                            if (!subjectsList.contains(trimmed)) {
-                                                subjectsList.add(0, trimmed)
-                                            }
-                                            selectedSubject = trimmed
+                                        val value = customSubjectText.trim()
+                                        if (value.isNotBlank()) {
+                                            if (!subjects.contains(value)) subjects.add(0, value)
+                                            selectedSubject = value
                                             customSubjectText = ""
                                             showCustomSubjectInput = false
                                         }
                                     }
-                                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                                    .padding(horizontal = 14.dp, vertical = 14.dp)
                             ) {
                                 Text(
                                     text = "Pilih",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (customSubjectText.isNotBlank()) Color.White else AppleTextMuted
+                                    color = if (customSubjectText.isNotBlank()) Color.White else AppleTextMuted,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
                         }
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // SECTION 3: Tenggat Waktu (Quick Presets + DatePicker & TimePicker)
-            GlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                elevation = 2.dp
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                    text = "TENGGAT WAKTU (DEADLINE)",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppleTextSecondary,
-                    letterSpacing = 0.5.sp
-                )
+            SectionCard {
+                Column {
+                    SectionTitle("DEADLINE")
+                    Spacer(Modifier.height(9.dp))
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Quick Presets Row
-                val deadlineOptions = listOf(
-                    Pair("Sore Ini (17:00)", nantiSore),
-                    Pair("Malam Ini (20:00)", malamIni),
-                    Pair("Besok Pagi (08:00)", besokPagi),
-                    Pair("Besok Sore (16:00)", besokSore),
-                    Pair("Lusa (10:00)", lusa),
-                    Pair("Minggu Depan", mingguDepan)
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(7.dp)
-                ) {
-                    deadlineOptions.forEachIndexed { index, (label, time) ->
-                        val isSelected = selectedPresetIndex == index
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(if (isSelected) AppleSystemBlue else Color(0xFF26262A))
-                                .border(
-                                    0.6.dp,
-                                    if (isSelected) AppleSystemBlue else Color(0x18FFFFFF),
-                                    RoundedCornerShape(10.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(7.dp)
+                    ) {
+                        deadlineOptions.forEachIndexed { index, option ->
+                            val selected = selectedPresetIndex == index
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (selected) AppleSystemBlue else ControlBackground)
+                                    .clickable {
+                                        selectedPresetIndex = index
+                                        deadlineMillis = option.second
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = option.first,
+                                    color = if (selected) Color.White else AppleTextSecondary,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
                                 )
-                                .clickable {
-                                    selectedPresetIndex = index
-                                    deadlineMillis = time
-                                }
-                                .padding(horizontal = 12.dp, vertical = 7.dp)
-                        ) {
-                            Text(
-                                text = label,
-                                fontSize = 12.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) Color.White else AppleTextSecondary
-                            )
+                            }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(Modifier.height(10.dp))
 
-                // Custom Date & Time Picker Container
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF242428))
-                        .border(0.6.dp, Color(0x20FFFFFF), RoundedCornerShape(12.dp))
-                        .padding(12.dp)
-                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(ControlBackground)
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -583,29 +489,29 @@ fun QuickAddBottomSheet(
                             tint = AppleSystemBlue,
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(Modifier.width(7.dp))
                         Text(
-                            text = deadlineDisplayString,
+                            text = deadlineDisplay,
+                            modifier = Modifier.weight(1f),
+                            color = AppleTextPrimary,
                             fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = AppleTextPrimary
+                            fontWeight = FontWeight.Medium
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(Modifier.height(8.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Date Picker Button
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFF323238))
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(ControlBackground)
                                 .clickable { openDatePicker() }
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -613,26 +519,20 @@ fun QuickAddBottomSheet(
                                     imageVector = Icons.Default.EditCalendar,
                                     contentDescription = null,
                                     tint = AppleSystemBlue,
-                                    modifier = Modifier.size(14.dp)
+                                    modifier = Modifier.size(15.dp)
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Pilih Tanggal",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = AppleTextPrimary
-                                )
+                                Spacer(Modifier.width(5.dp))
+                                Text("Tanggal", color = AppleTextPrimary, fontSize = 12.sp)
                             }
                         }
 
-                        // Time Picker Button
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFF323238))
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(ControlBackground)
                                 .clickable { openTimePicker() }
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -640,225 +540,170 @@ fun QuickAddBottomSheet(
                                     imageVector = Icons.Default.Schedule,
                                     contentDescription = null,
                                     tint = AppleSystemBlue,
-                                    modifier = Modifier.size(14.dp)
+                                    modifier = Modifier.size(15.dp)
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Pilih Jam",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = AppleTextPrimary
-                                )
+                                Spacer(Modifier.width(5.dp))
+                                Text("Jam", color = AppleTextPrimary, fontSize = 12.sp)
                             }
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // SECTION 4: Prioritas & Durasi
-            GlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                elevation = 2.dp
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                    text = "TINGKAT PRIORITAS",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppleTextSecondary,
-                    letterSpacing = 0.5.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+            SectionCard {
+                Column {
+                    SectionTitle("PRIORITAS")
+                    Spacer(Modifier.height(8.dp))
 
-                // Quiet Segmented Control
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFF26262A))
-                        .padding(3.dp),
-                    horizontalArrangement = Arrangement.spacedBy(3.dp)
-                ) {
-                    listOf(
-                        Pair("Santai", "LOW"),
-                        Pair("Normal", "NORMAL"),
-                        Pair("Mendesak", "HIGH")
-                    ).forEach { (label, value) ->
-                        val isSelected = selectedPriority == value
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) Color(0xFF38383E) else Color.Transparent)
-                                .clickable { selectedPriority = value }
-                                .padding(vertical = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(
-                                            when (value) {
-                                                "HIGH" -> AppleSystemRed
-                                                "NORMAL" -> AppleSystemBlue
-                                                else -> AppleSystemGreen
-                                            }
-                                        )
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = label,
-                                    fontSize = 12.sp,
-                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (isSelected) AppleTextPrimary else AppleTextSecondary
-                                )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(ControlBackground)
+                            .padding(3.dp),
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        listOf(
+                            Triple("Santai", "LOW", AppleSystemGreen),
+                            Triple("Normal", "NORMAL", AppleSystemBlue),
+                            Triple("Mendesak", "HIGH", AppleSystemRed)
+                        ).forEach { (label, value, dotColor) ->
+                            val selected = selectedPriority == value
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (selected) Color(0xFF313744) else Color.Transparent)
+                                    .clickable { selectedPriority = value }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(dotColor)
+                                    )
+                                    Spacer(Modifier.width(5.dp))
+                                    Text(
+                                        text = label,
+                                        color = if (selected) AppleTextPrimary else AppleTextSecondary,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Text(
-                    text = "ESTIMASI DURASI",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppleTextSecondary,
-                    letterSpacing = 0.5.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    durationOptions.forEach { mins ->
-                        val isSelected = estimatedMinutes == mins
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) AppleSystemBlue else Color(0xFF26262A))
-                                .border(
-                                    0.6.dp,
-                                    if (isSelected) AppleSystemBlue else Color(0x18FFFFFF),
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .clickable { estimatedMinutes = mins }
-                                .padding(horizontal = 14.dp, vertical = 7.dp)
-                        ) {
-                            Text(
-                                text = "$mins mnt",
-                                fontSize = 12.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) Color.White else AppleTextSecondary
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-            // SECTION 5: Lokasi & Notifikasi Shade
-            GlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                elevation = 2.dp
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                        text = "PENGINGAT LOKASI (GEOFENCE)",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppleTextSecondary,
-                        letterSpacing = 0.5.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(Modifier.height(12.dp))
+                    SectionTitle("ESTIMASI DURASI")
+                    Spacer(Modifier.height(8.dp))
 
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(7.dp)
                     ) {
-                        locationPresets.forEach { loc ->
-                            val isSelected = selectedLocation == loc
+                        durationOptions.forEach { minutes ->
+                            val selected = estimatedMinutes == minutes
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSelected) AppleSystemOrange else Color(0x1CFFFFFF))
-                                    .border(
-                                        0.6.dp,
-                                        if (isSelected) SolidColor(AppleSystemOrange) else LiquidGlassTokens.GlassSpecularBorderBrush,
-                                        RoundedCornerShape(8.dp)
-                                    )
+                                    .clip(RoundedCornerShape(9.dp))
+                                    .background(if (selected) AppleSystemBlue else ControlBackground)
+                                    .clickable { estimatedMinutes = minutes }
+                                    .padding(horizontal = 13.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = "$minutes mnt",
+                                    color = if (selected) Color.White else AppleTextSecondary,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            SectionCard {
+                Column {
+                    SectionTitle("PENGINGAT LOKASI")
+                    Spacer(Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(7.dp)
+                    ) {
+                        locationPresets.forEach { location ->
+                            val selected = selectedLocation == location
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(9.dp))
+                                    .background(if (selected) AppleSystemOrange else ControlBackground)
                                     .clickable {
-                                        selectedLocation = if (isSelected) null else loc
+                                        selectedLocation = if (selected) null else location
                                     }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .padding(horizontal = 11.dp, vertical = 8.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
                                         imageVector = Icons.Default.LocationOn,
                                         contentDescription = null,
-                                        tint = if (isSelected) Color.White else AppleTextSecondary,
-                                        modifier = Modifier.size(13.dp)
+                                        tint = if (selected) Color.White else AppleTextSecondary,
+                                        modifier = Modifier.size(14.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(Modifier.width(4.dp))
                                     Text(
-                                        text = loc,
-                                        fontSize = 12.sp,
-                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                        color = if (isSelected) Color.White else AppleTextSecondary
+                                        text = location,
+                                        color = if (selected) Color.White else AppleTextSecondary,
+                                        fontSize = 12.sp
                                     )
                                 }
                             }
                         }
                     }
 
-                    AnimatedVisibility(visible = selectedLocation != null) {
-                        Column(modifier = Modifier.padding(top = 12.dp)) {
+                    AnimatedVisibility(selectedLocation != null) {
+                        Column(modifier = Modifier.padding(top = 10.dp)) {
                             Text(
-                                text = "PICU SAAT",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                text = "Picu saat",
                                 color = AppleTextSecondary,
-                                letterSpacing = 0.5.sp
+                                fontSize = 11.sp
                             )
-                            Spacer(modifier = Modifier.height(7.dp))
+                            Spacer(Modifier.height(6.dp))
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0x20FFFFFF))
-                                    .border(0.6.dp, GlassBorderSubtle, RoundedCornerShape(10.dp))
+                                    .background(ControlBackground)
                                     .padding(3.dp),
                                 horizontalArrangement = Arrangement.spacedBy(3.dp)
                             ) {
-                                listOf("Masuk lokasi" to "ENTER", "Keluar lokasi" to "EXIT").forEach { (label, value) ->
-                                    val selected = selectedLocationTrigger == value
+                                listOf("Masuk" to "ENTER", "Keluar" to "EXIT").forEach { item ->
+                                    val selected = selectedLocationTrigger == item.second
                                     Box(
                                         modifier = Modifier
                                             .weight(1f)
                                             .clip(RoundedCornerShape(8.dp))
-                                            .background(if (selected) AppleSystemBlue else Color.Transparent)
-                                            .clickable { selectedLocationTrigger = value }
+                                            .background(if (selected) Color(0xFF313744) else Color.Transparent)
+                                            .clickable { selectedLocationTrigger = item.second }
                                             .padding(vertical = 8.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            text = label,
+                                            text = item.first,
+                                            color = if (selected) AppleTextPrimary else AppleTextSecondary,
                                             fontSize = 12.sp,
-                                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                                            color = if (selected) Color.White else AppleTextSecondary
+                                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
                                         )
                                     }
                                 }
@@ -866,76 +711,49 @@ fun QuickAddBottomSheet(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(Modifier.height(12.dp))
 
-                    // Persistent Shade Switch
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0x20FFFFFF))
-                            .border(0.6.dp, GlassBorderSubtle, RoundedCornerShape(10.dp))
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(ControlBackground)
+                            .padding(horizontal = 12.dp, vertical = 9.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Tetap tampil di notifikasi",
+                                text = "Notifikasi tetap",
+                                color = AppleTextPrimary,
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = AppleTextPrimary
+                                fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "Notifikasi tetap ada sampai tugas selesai atau ditunda",
-                                fontSize = 11.sp,
-                                color = AppleTextSecondary
+                                text = "Tetap tampil sampai selesai atau ditunda.",
+                                color = AppleTextSecondary,
+                                fontSize = 11.sp
                             )
                         }
                         Switch(
                             checked = isPersistent,
                             onCheckedChange = { isPersistent = it },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
                                 checkedTrackColor = AppleSystemBlue,
-                                uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = Color(0x35FFFFFF)
+                                checkedThumbColor = Color.White
                             )
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
 
-            // Primary Action Button (Liquid Glass Button)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
-                    .shadow(
-                        elevation = if (title.isNotBlank()) 6.dp else 1.dp,
-                        shape = RoundedCornerShape(14.dp),
-                        spotColor = if (title.isNotBlank()) Color(0x450A84FF) else Color.Transparent
-                    )
                     .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        if (title.isNotBlank()) {
-                            Brush.verticalGradient(listOf(Color(0xFF0A84FF), Color(0xFF0071E3)))
-                        } else {
-                            Brush.verticalGradient(listOf(Color(0x22FFFFFF), Color(0x14FFFFFF)))
-                        }
-                    )
-                    .background(LiquidGlassTokens.GlassCardSheenBrush)
-                    .border(
-                        width = 0.85.dp,
-                        brush = if (title.isNotBlank()) {
-                            Brush.verticalGradient(listOf(Color(0x80FFFFFF), Color(0x20FFFFFF)))
-                        } else {
-                            Brush.verticalGradient(listOf(Color(0x18FFFFFF), Color(0x08FFFFFF)))
-                        },
-                        shape = RoundedCornerShape(14.dp)
-                    )
+                    .background(if (title.isNotBlank()) AppleSystemBlue else ControlBackground)
                     .clickable(enabled = title.isNotBlank()) {
                         onAddTask(
                             title.trim(),
@@ -953,15 +771,11 @@ fun QuickAddBottomSheet(
             ) {
                 Text(
                     text = "Simpan Tugas",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
                     color = if (title.isNotBlank()) Color.White else AppleTextMuted,
-                    letterSpacing = (-0.2).sp
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
-
-            Spacer(modifier = Modifier.height(30.dp))
         }
     }
-}
 }
