@@ -58,7 +58,7 @@ object AiTaskParserService {
         } catch (_: Exception) {
             ""
         }
-        val model = configuredModel.ifBlank { "llama-3.3-70b-versatile" }
+        val model = configuredModel.ifBlank { "openai/gpt-oss-120b" }
 
         if (apiKey.isBlank() || apiKey == "MY_GROQ_API_KEY") {
             return@withContext null
@@ -116,6 +116,8 @@ object AiTaskParserService {
             val requestJson = JSONObject().apply {
                 put("model", model)
                 put("temperature", 0.1)
+                put("reasoning_effort", "low")
+                put("reasoning_format", "hidden")
                 put("response_format", JSONObject().apply {
                     put("type", "json_object")
                 })
@@ -233,7 +235,7 @@ object AiTaskParserService {
     suspend fun chatWithExternalApi(userMessage: String): String? = withContext(Dispatchers.IO) {
         val apiKey = try { BuildConfig.GROQ_API_KEY } catch (_: Exception) { "" }
         val configuredModel = try { BuildConfig.GROQ_MODEL } catch (_: Exception) { "" }
-        val model = configuredModel.ifBlank { "llama-3.3-70b-versatile" }
+        val model = configuredModel.ifBlank { "openai/gpt-oss-120b" }
 
         if (apiKey.isBlank() || apiKey == "MY_GROQ_API_KEY") return@withContext null
 
@@ -247,7 +249,7 @@ object AiTaskParserService {
                         put(
                             "content",
                             "Kamu adalah AI Asisten AntiMager. Jawab bahasa Indonesia secara singkat, natural, dan membantu. " +
-                                "Jangan mengubah obrolan biasa menjadi tugas. Jika ditanya model AI, jawab bahwa teks memakai Groq dengan Llama 3.3 70B, " +
+                                "Jangan mengubah obrolan biasa menjadi tugas. Jika ditanya model AI, jawab bahwa teks memakai Groq dengan GPT-OSS 120B, " +
                                 "sedangkan scan foto jadwal memakai Gemini Vision."
                         )
                     })
