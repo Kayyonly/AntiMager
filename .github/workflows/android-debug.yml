@@ -1,10 +1,10 @@
-name: Android Debug APK
+name: Build AntiMager APK
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - real-device-ready
-  workflow_dispatch:
 
 jobs:
   build-debug:
@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Java 17
@@ -21,18 +21,41 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Gradle
+      - name: Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.3.1"
+
+      - name: Check required API secrets
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GROQ_API_KEY" ]; then
+            echo "::error::GROQ_API_KEY belum di-set di Repository secrets"
+            exit 1
+          fi
+
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "::error::GEMINI_API_KEY belum di-set di Repository secrets"
+            exit 1
+          fi
+
+      - name: Create runtime .env
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          printf 'GROQ_API_KEY=%s\n' "$GROQ_API_KEY" > .env
+          printf 'GEMINI_API_KEY=%s\n' "$GEMINI_API_KEY" >> .env
 
       - name: Build debug APK
-        run: |
-          chmod +x ./gradlew
-          ./gradlew :app:assembleDebug --stacktrace
+        run: gradle :app:assembleDebug --stacktrace
 
-      - name: Upload debug APK
-        if: success()
+      - name: Upload AntiMager APK
         uses: actions/upload-artifact@v4
         with:
           name: AntiMager-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 30
