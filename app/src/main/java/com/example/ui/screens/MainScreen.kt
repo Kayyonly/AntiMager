@@ -1,8 +1,16 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,18 +19,18 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
@@ -48,21 +56,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.ui.components.GlassBackground
+import com.example.ui.components.LiquidGlassTokens
 import com.example.ui.theme.AppleSystemBlue
 import com.example.ui.theme.AppleSystemBlueSubtle
+import com.example.ui.theme.AppleTextPrimary
 import com.example.ui.theme.AppleTextTertiary
 import com.example.ui.theme.GlassBorderHighlight
 import com.example.ui.theme.GlassBorderStandard
@@ -95,6 +105,7 @@ enum class MainTab(
     SHIELD("Proteksi", Icons.Filled.Shield, Icons.Outlined.Shield)
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MainScreen(
     taskViewModel: TaskViewModel = viewModel(),
@@ -105,44 +116,62 @@ fun MainScreen(
 ) {
     var selectedTab by remember { mutableStateOf(MainTab.TASKS) }
     var isSettingsOpen by remember { mutableStateOf(false) }
+    val isImeVisible = WindowInsets.isImeVisible
 
-    Scaffold(
-        containerColor = IosSystemBackground,
-        contentColor = IosTextPrimary,
-        bottomBar = {
-            if (!isSettingsOpen) {
-                IosBottomNavigationBar(
-                    selectedTab = selectedTab,
-                    onSelectTab = { selectedTab = it }
-                )
-            }
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            Crossfade(targetState = isSettingsOpen, label = "settings_overlay_transition") { settingsActive ->
-                if (settingsActive) {
-                    SettingsScreen(
-                        viewModel = settingsViewModel,
-                        onBack = { isSettingsOpen = false }
+    GlassBackground {
+        Scaffold(
+            containerColor = Color.Transparent,
+            contentColor = IosTextPrimary,
+            bottomBar = {
+                AnimatedVisibility(
+                    visible = !isSettingsOpen && !isImeVisible,
+                    enter = slideInVertically(
+                        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+                    ) { it } + fadeIn(animationSpec = tween(durationMillis = 200)),
+                    exit = slideOutVertically(
+                        animationSpec = tween(durationMillis = 200, easing = FastOutLinearInEasing)
+                    ) { it } + fadeOut(animationSpec = tween(durationMillis = 150))
+                ) {
+                    IosBottomNavigationBar(
+                        selectedTab = selectedTab,
+                        onSelectTab = { selectedTab = it }
                     )
-                } else {
-                    Crossfade(targetState = selectedTab, label = "tab_transition") { tab ->
-                        when (tab) {
-                            MainTab.TASKS -> TaskListScreen(viewModel = taskViewModel)
-                            MainTab.SCHEDULE -> ScheduleScreen(
-                                viewModel = scheduleViewModel,
-                                onOpenSettings = { isSettingsOpen = true }
-                            )
-                            MainTab.AI_CHAT -> AiChatScreen(viewModel = aiChatViewModel)
-                            MainTab.HABITS -> HabitScreen(viewModel = habitViewModel)
-                            MainTab.SHIELD -> LocationAndSettingsScreen(
-                                viewModel = taskViewModel,
-                                onOpenSettings = { isSettingsOpen = true }
-                            )
+                }
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = paddingValues.calculateTopPadding())
+            ) {
+                Crossfade(targetState = isSettingsOpen, label = "settings_overlay_transition") { settingsActive ->
+                    if (settingsActive) {
+                        SettingsScreen(
+                            viewModel = settingsViewModel,
+                            onBack = { isSettingsOpen = false }
+                        )
+                    } else {
+                        Crossfade(targetState = selectedTab, label = "tab_transition") { tab ->
+                            val tabModifier = if (tab == MainTab.AI_CHAT) {
+                                Modifier.padding(bottom = if (!isImeVisible) paddingValues.calculateBottomPadding() else 0.dp)
+                            } else {
+                                Modifier
+                            }
+                            when (tab) {
+                                MainTab.TASKS -> TaskListScreen(viewModel = taskViewModel, modifier = tabModifier)
+                                MainTab.SCHEDULE -> ScheduleScreen(
+                                    viewModel = scheduleViewModel,
+                                    onOpenSettings = { isSettingsOpen = true },
+                                    modifier = tabModifier
+                                )
+                                MainTab.AI_CHAT -> AiChatScreen(viewModel = aiChatViewModel, modifier = tabModifier)
+                                MainTab.HABITS -> HabitScreen(viewModel = habitViewModel, modifier = tabModifier)
+                                MainTab.SHIELD -> LocationAndSettingsScreen(
+                                    viewModel = taskViewModel,
+                                    onOpenSettings = { isSettingsOpen = true },
+                                    modifier = tabModifier
+                                )
+                            }
                         }
                     }
                 }
@@ -162,8 +191,8 @@ fun IosBottomNavigationBar(
     modifier: Modifier = Modifier
 ) {
     val tabs = MainTab.entries
-    val dockShape = RoundedCornerShape(24.dp)
-    val activeShape = RoundedCornerShape(18.dp)
+    val dockShape = RoundedCornerShape(30.dp)
+    val activeShape = RoundedCornerShape(20.dp)
 
     var dockWidthPx by remember { mutableIntStateOf(0) }
     var isDragging by remember { mutableStateOf(false) }
@@ -174,17 +203,12 @@ fun IosBottomNavigationBar(
     val selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0)
 
     LaunchedEffect(selectedIndex) {
-        if (!isDragging) {
-            dragPosition = selectedIndex.toFloat()
-        }
+        if (!isDragging) dragPosition = selectedIndex.toFloat()
     }
 
     val indicatorPosition by animateFloatAsState(
         targetValue = if (isDragging) dragPosition else selectedIndex.toFloat(),
-        animationSpec = spring(
-            dampingRatio = 0.72f,
-            stiffness = 520f
-        ),
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = 520f),
         label = "liquid_glass_tab_position"
     )
 
@@ -192,70 +216,73 @@ fun IosBottomNavigationBar(
         modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = 20.dp, vertical = 10.dp)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(62.dp)
                 .shadow(
-                    elevation = 8.dp,
+                    elevation = 16.dp,
                     shape = dockShape,
-                    spotColor = Color(0x33000000),
-                    ambientColor = Color(0x20000000)
+                    spotColor = Color(0x6A000000),
+                    ambientColor = Color(0x36000000)
                 )
                 .clip(dockShape)
-                .background(Color(0xD9141417))
+                .background(LiquidGlassTokens.GlassDockSurfaceBrush)
+                .background(LiquidGlassTokens.GlassCardSheenBrush)
                 .border(
-                    width = 0.7.dp,
-                    color = GlassBorderSubtle,
+                    width = 0.75.dp,
+                    brush = LiquidGlassTokens.GlassSpecularBorderBrushElevated,
                     shape = dockShape
                 )
-                .padding(horizontal = 4.dp, vertical = 5.dp)
+                .padding(horizontal = 5.dp, vertical = 5.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(0.72f)
+                    .height(1.dp)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color.Transparent, Color(0x66FFFFFF), Color.Transparent)
+                        )
+                    )
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
                     .onSizeChanged { dockWidthPx = it.width }
                     .pointerInput(dockWidthPx, tabs.size) {
                         if (dockWidthPx <= 0) return@pointerInput
-
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
                             val segmentWidth = dockWidthPx.toFloat() / tabs.size
 
-                            // Start tracking immediately, without Android's normal touch-slop delay.
-                            // This is what makes the glass capsule feel attached to the finger.
                             isDragging = true
                             dragPosition = (
                                 down.position.x / segmentWidth - 0.5f
                             ).coerceIn(0f, tabs.lastIndex.toFloat())
 
-                            var lastPressed = true
-                            while (lastPressed) {
+                            var pressed = true
+                            while (pressed) {
                                 val event = awaitPointerEvent()
                                 val change = event.changes.firstOrNull { it.id == down.id } ?: break
-
                                 dragPosition = (
                                     change.position.x / segmentWidth - 0.5f
                                 ).coerceIn(0f, tabs.lastIndex.toFloat())
-
-                                lastPressed = change.pressed
+                                pressed = change.pressed
                                 change.consume()
                             }
 
-                            val targetIndex = dragPosition
-                                .roundToInt()
-                                .coerceIn(0, tabs.lastIndex)
-
+                            val targetIndex = dragPosition.roundToInt().coerceIn(0, tabs.lastIndex)
                             isDragging = false
                             dragPosition = targetIndex.toFloat()
                             onSelectTab(tabs[targetIndex])
                         }
                     }
             ) {
-                // The active Liquid Glass capsule physically follows the finger.
-                // Tapping still works; dragging left/right gives the iOS-like scrub interaction.
                 if (dockWidthPx > 0) {
                     val segmentWidthPx = dockWidthPx.toFloat() / tabs.size
                     val segmentWidthDp = with(LocalDensity.current) { segmentWidthPx.toDp() }
@@ -268,22 +295,12 @@ fun IosBottomNavigationBar(
                                     y = 0
                                 )
                             }
-                            // Important: keep the capsule exactly one tab wide.
-                            // The old fillMaxSize() made the glass layer occupy the whole dock.
                             .width(segmentWidthDp)
                             .fillMaxSize()
                             .padding(horizontal = 2.dp, vertical = 1.dp)
-                            .graphicsLayer {
-                                scaleX = if (isDragging) 1.08f else 1f
-                                scaleY = if (isDragging) 0.94f else 1f
-                            }
                             .clip(activeShape)
-                            .background(Color(0x30FFFFFF))
-                            .border(
-                                width = 0.9.dp,
-                                color = Color(0x4AFFFFFF),
-                                shape = activeShape
-                            )
+                            .background(Color(0x2BFFFFFF))
+                            .border(0.7.dp, Color(0x46FFFFFF), activeShape)
                     )
                 }
 
@@ -293,13 +310,12 @@ fun IosBottomNavigationBar(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     tabs.forEach { tab ->
-                        val isSelected = selectedTab == tab
-
+                        val selected = tab == selectedTab
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxSize()
-                                .clip(RoundedCornerShape(16.dp)),
+                                .clip(activeShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -307,18 +323,18 @@ fun IosBottomNavigationBar(
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Icon(
-                                    imageVector = if (isSelected) tab.selectedIcon else tab.unselectedIcon,
+                                    imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
                                     contentDescription = tab.title,
-                                    tint = if (isSelected) AppleSystemBlue else AppleTextTertiary,
-                                    modifier = Modifier.size(20.dp)
+                                    tint = if (selected) AppleSystemBlue else AppleTextTertiary,
+                                    modifier = Modifier.size(if (selected) 21.dp else 20.dp)
                                 )
-                                Spacer(modifier = Modifier.height(3.dp))
+                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = tab.title,
-                                    fontSize = 10.sp,
-                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (isSelected) AppleSystemBlue else AppleTextTertiary,
-                                    letterSpacing = (-0.1).sp
+                                    fontSize = 9.5.sp,
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                                    color = if (selected) AppleTextPrimary else AppleTextTertiary,
+                                    letterSpacing = (-0.15).sp
                                 )
                             }
                         }
@@ -328,4 +344,3 @@ fun IosBottomNavigationBar(
         }
     }
 }
-
