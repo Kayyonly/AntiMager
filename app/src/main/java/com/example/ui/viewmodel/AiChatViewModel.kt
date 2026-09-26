@@ -160,7 +160,7 @@ class AiChatViewModel(application: Application) : AndroidViewModel(application) 
                     "Hadir. Ada yang bisa gue bantu?"
                 ).random()
             lower.contains("ai apa") || lower.contains("model apa") || lower.contains("pake ai") ->
-                "Untuk chat teks aku pakai Groq dengan Llama 3.3 70B. Scan foto jadwal pakai Gemini Vision."
+                "Untuk chat teks aku pakai Groq dengan GPT-OSS 120B. Scan foto jadwal pakai Gemini Vision."
             lower.contains("ngobrol") || lower.contains("chat") ->
                 "Boleh. Ngobrol aja, gue nggak bakal ubah percakapan biasa jadi tugas kecuali kamu memang minta dibuatkan pengingat."
             else ->
