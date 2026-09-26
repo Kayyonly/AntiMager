@@ -32,9 +32,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -44,6 +46,7 @@ import com.example.ui.theme.AppleSystemBlue
 import com.example.ui.theme.AppleSystemBlueSubtle
 import com.example.ui.theme.AppleSystemRed
 import com.example.ui.theme.AppleTextMuted
+import com.example.ui.theme.AppleTextPlaceholder
 import com.example.ui.theme.AppleTextPrimary
 import com.example.ui.theme.AppleTextSecondary
 import com.example.ui.theme.AppleTextTertiary
@@ -55,21 +58,29 @@ import com.example.ui.theme.GlassLayer2
 import com.example.ui.theme.GlassLayer3
 import com.example.ui.theme.LiquidDarkBackground
 import com.example.ui.theme.LiquidDarkCard
+import com.example.ui.theme.LiquidDarkCardSolid
 import com.example.ui.theme.LiquidDarkElevated
+import com.example.ui.theme.LiquidGlassBackgroundBrush
+import com.example.ui.theme.LiquidGlassCardSheenBrush
+import com.example.ui.theme.LiquidGlassCardSurfaceBrush
+import com.example.ui.theme.LiquidGlassDockSurfaceBrush
+import com.example.ui.theme.LiquidGlassModalSurfaceBrush
+import com.example.ui.theme.LiquidGlassSpecularBorderBrush
+import com.example.ui.theme.LiquidGlassSpecularBorderBrushElevated
 
 /**
- * Native Apple iOS Tokens
- * Restrained geometry and spacing
+ * iOS 26 Liquid Glass Tokens
+ * Subtle geometry, authentic glass opacity and specular reflection borders.
  */
 object LiquidGlassTokens {
     // Radius System
-    val RadiusSmall: Dp = 8.dp
-    val RadiusControl: Dp = 10.dp
-    val RadiusInput: Dp = 12.dp
-    val RadiusButton: Dp = 14.dp
-    val RadiusCard: Dp = 16.dp
-    val RadiusPanel: Dp = 22.dp
-    val RadiusSheet: Dp = 26.dp
+    val RadiusSmall: Dp = 10.dp
+    val RadiusControl: Dp = 12.dp
+    val RadiusInput: Dp = 14.dp
+    val RadiusButton: Dp = 16.dp
+    val RadiusCard: Dp = 20.dp
+    val RadiusPanel: Dp = 24.dp
+    val RadiusSheet: Dp = 30.dp
 
     // Spacing System
     val Space4: Dp = 4.dp
@@ -80,21 +91,13 @@ object LiquidGlassTokens {
     val Space24: Dp = 24.dp
     val Space32: Dp = 32.dp
 
-    // Compatibility brushes used by the latest Liquid Glass Quick Add UI.
-    val GlassSpecularBorderBrush = Brush.verticalGradient(
-        listOf(
-            Color(0x5CFFFFFF),
-            Color(0x25FFFFFF),
-            Color(0x0FFFFFFF)
-        )
-    )
-    val GlassCardSheenBrush = Brush.verticalGradient(
-        listOf(
-            Color(0x22FFFFFF),
-            Color(0x0BFFFFFF),
-            Color(0x00FFFFFF)
-        )
-    )
+    // Brushes
+    val GlassCardSurfaceBrush = LiquidGlassCardSurfaceBrush
+    val GlassCardSheenBrush = LiquidGlassCardSheenBrush
+    val GlassSpecularBorderBrush = LiquidGlassSpecularBorderBrush
+    val GlassSpecularBorderBrushElevated = LiquidGlassSpecularBorderBrushElevated
+    val GlassDockSurfaceBrush = LiquidGlassDockSurfaceBrush
+    val GlassModalSurfaceBrush = LiquidGlassModalSurfaceBrush
 }
 
 enum class GlassDepth(val level: Int) {
@@ -109,7 +112,7 @@ enum class GlassDepth(val level: Int) {
 @Composable
 fun Modifier.tactilePress(
     enabled: Boolean = true,
-    targetScale: Float = 0.98f,
+    targetScale: Float = 0.975f,
     onClick: (() -> Unit)? = null
 ): Modifier {
     if (!enabled && onClick == null) return this
@@ -137,20 +140,22 @@ fun Modifier.tactilePress(
 }
 
 /**
- * Extremely subtle hairline border modifier (~6% opacity).
+ * Specular hairline border modifier with subtle light reflection.
  */
 fun Modifier.glassBorder(
-    shape: Shape = RoundedCornerShape(16.dp),
-    borderWidth: Dp = 0.6.dp,
-    borderColor: Color = GlassBorderSubtle
+    shape: Shape = RoundedCornerShape(LiquidGlassTokens.RadiusCard),
+    borderWidth: Dp = 0.8.dp,
+    borderBrush: Brush = LiquidGlassTokens.GlassSpecularBorderBrush
 ): Modifier = this.border(
     width = borderWidth,
-    color = borderColor,
+    brush = borderBrush,
     shape = shape
 )
 
 /**
- * Pure pitch black canvas.
+ * Neutral dark Liquid Glass canvas background.
+ * Very subtle deep slate to pitch-black depth with zero neon colors,
+ * providing the atmospheric backdrop for translucent glass refraction.
  */
 @Composable
 fun GlassBackground(
@@ -160,11 +165,49 @@ fun GlassBackground(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(LiquidDarkBackground)
+            .background(LiquidGlassBackgroundBrush)
     ) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            // Soft wallpaper-like light behind the glass. Low alpha keeps it Apple-like,
+            // not neon or "AI dashboard" looking.
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0x180A84FF), Color(0x000A84FF)),
+                    center = androidx.compose.ui.geometry.Offset(size.width * 0.10f, size.height * 0.02f),
+                    radius = size.width * 0.95f
+                )
+            )
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0x105E5CE6), Color(0x005E5CE6)),
+                    center = androidx.compose.ui.geometry.Offset(size.width * 1.02f, size.height * 0.76f),
+                    radius = size.width * 0.90f
+                )
+            )
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0x0CFFFFFF), Color(0x00FFFFFF)),
+                    center = androidx.compose.ui.geometry.Offset(size.width * 0.55f, size.height * 0.20f),
+                    radius = size.width * 0.62f
+                )
+            )
+        }
         content()
     }
 }
+
+/**
+ * Convenience modifier to give any component a Liquid Glass surface.
+ */
+fun Modifier.liquidGlassSurface(
+    shape: Shape = RoundedCornerShape(LiquidGlassTokens.RadiusCard),
+    borderWidth: Dp = 0.85.dp,
+    borderBrush: Brush = LiquidGlassTokens.GlassSpecularBorderBrush
+): Modifier = this
+    .clip(shape)
+    .background(LiquidGlassTokens.GlassCardSurfaceBrush)
+    .background(LiquidGlassTokens.GlassCardSheenBrush)
+    .border(width = borderWidth, brush = borderBrush, shape = shape)
 
 /**
  * Native translucent surface for floating overlays / bottom bar.
@@ -177,48 +220,117 @@ fun GlassSurface(
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
-    val bgColor = when (depth) {
-        GlassDepth.LEVEL_1_CONTENT -> Color(0xFF101012)
-        GlassDepth.LEVEL_2_FLOATING -> Color(0xF2161618)
-        GlassDepth.LEVEL_3_MODAL -> Color(0xFA18181C)
+    val (bgBrush, borderBrush, elevation) = when (depth) {
+        GlassDepth.LEVEL_1_CONTENT -> Triple(
+            LiquidGlassTokens.GlassCardSurfaceBrush,
+            LiquidGlassTokens.GlassSpecularBorderBrush,
+            2.dp
+        )
+        GlassDepth.LEVEL_2_FLOATING -> Triple(
+            LiquidGlassTokens.GlassDockSurfaceBrush,
+            LiquidGlassTokens.GlassSpecularBorderBrushElevated,
+            8.dp
+        )
+        GlassDepth.LEVEL_3_MODAL -> Triple(
+            LiquidGlassTokens.GlassModalSurfaceBrush,
+            LiquidGlassTokens.GlassSpecularBorderBrushElevated,
+            12.dp
+        )
     }
 
     Box(
         modifier = modifier
+            .shadow(
+                elevation = elevation,
+                shape = shape,
+                spotColor = Color(0x52000000),
+                ambientColor = Color(0x2A000000)
+            )
             .clip(shape)
-            .background(bgColor)
-            .glassBorder(shape = shape)
+            .background(bgBrush)
+            .background(LiquidGlassTokens.GlassCardSheenBrush)
+            .border(width = 0.75.dp, brush = borderBrush, shape = shape)
             .tactilePress(onClick = onClick)
     ) {
+        // Specular top hairline reflection
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(Color(0x00FFFFFF), Color(0x5AFFFFFF), Color(0x00FFFFFF))
+                    )
+                )
+        )
         content()
     }
 }
 
 /**
- * Native iOS Card: Flat, quiet dark surface without heavy borders or glow.
+ * iOS 26 Liquid Glass Card:
+ * Translucent frosted glass core, subtle top-down specular sheen,
+ * natural top-lit light reflection border, and soft ambient depth.
  */
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(LiquidGlassTokens.RadiusCard),
-    backgroundColor: Color = LiquidDarkCard,
-    borderColor: Color = GlassBorderSubtle,
-    borderWidth: Dp = 0.dp,
-    elevation: Dp = 0.dp,
+    backgroundColor: Color? = null,
+    backgroundBrush: Brush? = null,
+    borderColor: Color? = null,
+    borderBrush: Brush? = null,
+    borderWidth: Dp = 0.75.dp,
+    elevation: Dp = 3.dp,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
+    val effectiveBorderBrush = borderBrush ?: if (borderColor != null) {
+        SolidColor(borderColor)
+    } else {
+        LiquidGlassTokens.GlassSpecularBorderBrush
+    }
+
+    val effectiveBgBrush = backgroundBrush ?: if (backgroundColor != null && backgroundColor != LiquidDarkCard && backgroundColor != LiquidDarkCardSolid) {
+        val translucentColor = if (backgroundColor.alpha == 1f && backgroundColor.red < 0.2f && backgroundColor.green < 0.2f && backgroundColor.blue < 0.25f) {
+            backgroundColor.copy(alpha = 0.32f)
+        } else {
+            backgroundColor
+        }
+        SolidColor(translucentColor)
+    } else {
+        LiquidGlassTokens.GlassCardSurfaceBrush
+    }
+
     Box(
         modifier = modifier
+            .shadow(
+                elevation = elevation,
+                shape = shape,
+                spotColor = Color(0x48000000),
+                ambientColor = Color(0x26000000)
+            )
             .clip(shape)
-            .background(backgroundColor)
-            .then(
-                if (borderWidth > 0.dp) {
-                    Modifier.border(borderWidth, borderColor, shape)
-                } else Modifier
+            .background(effectiveBgBrush)
+            .background(LiquidGlassTokens.GlassCardSheenBrush)
+            .border(
+                width = borderWidth,
+                brush = effectiveBorderBrush,
+                shape = shape
             )
             .tactilePress(onClick = onClick)
     ) {
+        // Specular top chamfer highlight
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(Color(0x00FFFFFF), Color(0x52FFFFFF), Color(0x00FFFFFF))
+                    )
+                )
+        )
         content()
     }
 }
@@ -230,10 +342,12 @@ fun GlassCard(
 fun IosCard(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(LiquidGlassTokens.RadiusCard),
-    backgroundColor: Color = LiquidDarkCard,
-    borderColor: Color = GlassBorderSubtle,
-    borderWidth: Dp = 0.dp,
-    elevation: Dp = 0.dp,
+    backgroundColor: Color? = null,
+    backgroundBrush: Brush? = null,
+    borderColor: Color? = null,
+    borderBrush: Brush? = null,
+    borderWidth: Dp = 0.8.dp,
+    elevation: Dp = 2.dp,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
@@ -241,7 +355,9 @@ fun IosCard(
         modifier = modifier,
         shape = shape,
         backgroundColor = backgroundColor,
+        backgroundBrush = backgroundBrush,
         borderColor = borderColor,
+        borderBrush = borderBrush,
         borderWidth = borderWidth,
         elevation = elevation,
         onClick = onClick,
@@ -258,7 +374,8 @@ enum class ButtonVariant {
 typealias GlassButtonVariant = ButtonVariant
 
 /**
- * Native iOS Button: Clean, tactile, restrained.
+ * iOS 26 Liquid Glass Button:
+ * Clean, tactile, frosted glass with subtle specular light reflection.
  */
 @Composable
 fun GlassButton(
@@ -269,19 +386,42 @@ fun GlassButton(
     variant: ButtonVariant = ButtonVariant.PRIMARY,
     enabled: Boolean = true
 ) {
-    val (bgColor, textColor) = when (variant) {
-        ButtonVariant.PRIMARY -> Pair(AppleSystemBlue, Color.White)
-        ButtonVariant.SECONDARY -> Pair(Color(0xFF242426), AppleTextPrimary)
-        ButtonVariant.GLASS -> Pair(Color(0xFF1C1C1E), AppleTextPrimary)
-    }
-
     val shape = RoundedCornerShape(LiquidGlassTokens.RadiusButton)
+
+    val (bgBrush, borderBrush, textColor) = when (variant) {
+        ButtonVariant.PRIMARY -> Triple(
+            Brush.verticalGradient(listOf(Color(0xFF0A84FF), Color(0xFF0071E3))),
+            Brush.verticalGradient(listOf(Color(0x60FFFFFF), Color(0x15FFFFFF))),
+            Color.White
+        )
+        ButtonVariant.SECONDARY -> Triple(
+            LiquidGlassTokens.GlassCardSurfaceBrush,
+            LiquidGlassTokens.GlassSpecularBorderBrush,
+            AppleTextPrimary
+        )
+        ButtonVariant.GLASS -> Triple(
+            Brush.verticalGradient(listOf(Color(0x35283040), Color(0x22181C26))),
+            LiquidGlassTokens.GlassSpecularBorderBrushElevated,
+            AppleTextPrimary
+        )
+    }
 
     Box(
         modifier = modifier
             .heightIn(min = 46.dp)
+            .shadow(
+                elevation = if (variant == ButtonVariant.PRIMARY) 3.dp else 1.dp,
+                shape = shape,
+                spotColor = Color(0x30000000)
+            )
             .clip(shape)
-            .background(if (enabled) bgColor else bgColor.copy(alpha = 0.4f))
+            .background(if (enabled) bgBrush else SolidColor(Color(0x20FFFFFF)))
+            .background(LiquidGlassTokens.GlassCardSheenBrush)
+            .border(
+                width = 0.8.dp,
+                brush = if (enabled) borderBrush else SolidColor(Color(0x10FFFFFF)),
+                shape = shape
+            )
             .tactilePress(enabled = enabled, onClick = if (enabled) onClick else null)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
@@ -322,11 +462,29 @@ fun GlassIconButton(
     tint: Color = AppleTextSecondary,
     containerColor: Color = Color.Transparent
 ) {
+    val effectiveContainer = if (containerColor == Color.Transparent) {
+        Color(0x16FFFFFF)
+    } else {
+        containerColor
+    }
+
     Box(
         modifier = modifier
             .size(44.dp)
+            .shadow(
+                elevation = 5.dp,
+                shape = CircleShape,
+                spotColor = Color(0x42000000),
+                ambientColor = Color(0x22000000)
+            )
             .clip(CircleShape)
-            .background(containerColor)
+            .background(effectiveContainer)
+            .background(LiquidGlassTokens.GlassCardSheenBrush)
+            .border(
+                width = 0.7.dp,
+                brush = LiquidGlassTokens.GlassSpecularBorderBrush,
+                shape = CircleShape
+            )
             .tactilePress(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -340,7 +498,7 @@ fun GlassIconButton(
 }
 
 /**
- * Native iOS Restrained Urgency Indicator:
+ * Restrained Urgency Indicator:
  * Uses a subtle red dot or restrained text label instead of a giant colored pill.
  */
 @Composable
@@ -413,8 +571,8 @@ fun IosSectionHeader(
 }
 
 /**
- * Native Apple iOS Segmented Control
- * ONE continuous dark container with a sliding lighter pill
+ * iOS 26 Liquid Glass Segmented Control
+ * Translucent frosted glass container with a specular sliding pill.
  */
 @Composable
 fun <T> IosSegmentedControl(
@@ -424,15 +582,20 @@ fun <T> IosSegmentedControl(
     itemLabel: (T) -> String,
     modifier: Modifier = Modifier
 ) {
-    val outerShape = RoundedCornerShape(LiquidGlassTokens.RadiusControl)
-    val innerShape = RoundedCornerShape(8.dp)
+    val outerShape = RoundedCornerShape(14.dp)
+    val innerShape = RoundedCornerShape(11.dp)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(outerShape)
-            .background(Color(0xFF1C1C1E))
-            .padding(2.dp)
+            .background(LiquidGlassTokens.GlassCardSurfaceBrush)
+            .border(
+                width = 0.8.dp,
+                brush = LiquidGlassTokens.GlassSpecularBorderBrush,
+                shape = outerShape
+            )
+            .padding(4.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -445,10 +608,19 @@ fun <T> IosSegmentedControl(
                         .weight(1f)
                         .clip(innerShape)
                         .background(
-                            if (isSelected) Color(0xFF323236) else Color.Transparent
+                            if (isSelected) Color(0x30FFFFFF) else Color.Transparent
+                        )
+                        .then(
+                            if (isSelected) {
+                                Modifier.border(
+                                    width = 0.6.dp,
+                                    color = Color(0x42FFFFFF),
+                                    shape = innerShape
+                                )
+                            } else Modifier
                         )
                         .clickable { onItemSelected(item) }
-                        .padding(vertical = 7.dp),
+                        .padding(vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
