@@ -547,54 +547,50 @@ fun LocationAndSettingsScreen(
         }
 
         // ==========================================
-        // FEATURE 4: VOICE COMMAND (SHORTCUTS & WIDGET)
+        // FEATURE 4: VOICE COMMAND
         // ==========================================
         item {
             IosSectionHeader(title = "Voice Command")
 
-            IosCard(elevation = 1.5.dp) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+            IosCard(elevation = 1.dp) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(34.dp)
                                 .clip(CircleShape)
                                 .background(IosBlue.copy(alpha = 0.12f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Widgets,
+                                imageVector = Icons.Default.Mic,
                                 contentDescription = null,
                                 tint = IosBlue,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
+
+                        Spacer(modifier = Modifier.width(11.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Akses Voice dari Luar Aplikasi",
+                                text = "Tambah tugas lewat suara",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = IosTextPrimary
                             )
                             Text(
-                                text = "Bicara langsung tanpa harus buka app terlebih dahulu",
+                                text = "Bisa dibuka dari app, widget, atau shortcut.",
                                 fontSize = 12.sp,
                                 color = IosTextSecondary
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Text(
-                        text = "1. Home Screen Widget: Pasang widget AntiMager di layar depan HP-mu, ada tombol Mic 1-ketuk langsung merekam.\n2. App Shortcut: Tahan lama ikon aplikasi di layar utama, lalu pilih 'Voice Task'.\n3. Google Assistant: Ucapkan 'Buka Voice Task AntiMager'.",
-                        fontSize = 13.sp,
-                        color = IosTextSecondary,
-                        lineHeight = 18.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Button(
                         onClick = {
@@ -604,16 +600,16 @@ fun LocationAndSettingsScreen(
                             }
                             context.startActivity(intent)
                         },
-                        modifier = Modifier.fillMaxWidth().height(44.dp),
-                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().height(40.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = IosBlue,
                             contentColor = Color.White
                         )
                     ) {
                         Icon(Icons.Default.Mic, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Buka Voice Command Sekarang", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Spacer(modifier = Modifier.width(7.dp))
+                        Text("Buka Voice", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }

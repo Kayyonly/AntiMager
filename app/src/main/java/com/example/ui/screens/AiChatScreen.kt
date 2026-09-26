@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -179,7 +180,7 @@ fun AiChatScreen(
             Column {
                 if (!isImeVisible) {
                     Text(
-                        text = "Groq • Llama",
+                        text = "INTELLIGENCE",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         color = AppleTextSecondary
@@ -213,11 +214,11 @@ fun AiChatScreen(
                         modifier = Modifier
                             .size(6.dp)
                             .clip(CircleShape)
-                            .background(AppleSystemBlue)
+                            .background(AppleSystemOrange)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Online",
+                        text = "Llama 3.3 • Groq",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = AppleTextPrimary
@@ -288,215 +289,153 @@ fun AiChatScreen(
                     horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
                 ) {
                     if (isUser) {
-                        // User Bubble: iOS Blue Liquid Glass
                         val bubbleShape = RoundedCornerShape(
                             topStart = 18.dp,
                             topEnd = 18.dp,
                             bottomStart = 18.dp,
-                            bottomEnd = 4.dp
+                            bottomEnd = 5.dp
                         )
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth(0.82f)
-                                .shadow(2.dp, bubbleShape, spotColor = Color(0x350A84FF))
+                                .widthIn(max = 292.dp)
                                 .clip(bubbleShape)
-                                .background(LiquidGlassUserBubbleBrush)
-                                .background(LiquidGlassTokens.GlassCardSheenBrush)
-                                .border(
-                                    0.85.dp,
-                                    Brush.verticalGradient(
-                                        listOf(Color(0x80FFFFFF), Color(0x20FFFFFF))
-                                    ),
-                                    bubbleShape
-                                )
-                                .padding(horizontal = 14.dp, vertical = 11.dp)
+                                .background(AppleSystemBlue)
+                                .padding(horizontal = 14.dp, vertical = 10.dp)
                         ) {
                             MarkdownText(
                                 text = msg.text,
                                 textColor = Color.White,
-                                fontSize = 15.sp,
-                                lineHeight = 21.sp,
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
                                 bulletColor = Color.White
                             )
                         }
                     } else {
-                        // AI Bubble: Apple Intelligence Translucent Inset Liquid Glass
-                        val bubbleShape = RoundedCornerShape(
-                            topStart = 4.dp,
-                            topEnd = 18.dp,
-                            bottomStart = 18.dp,
-                            bottomEnd = 18.dp
-                        )
-                        Column(modifier = Modifier.fillMaxWidth(0.92f)) {
-                            GlassCard(
-                                shape = bubbleShape,
-                                elevation = 2.dp
-                            ) {
-                                Column(modifier = Modifier.padding(14.dp)) {
-                                    // Render formatted markdown text (bold, bullets, paragraphs cleanly)
-                                    MarkdownText(
-                                        text = msg.text,
-                                        textColor = AppleTextPrimary,
-                                        fontSize = 14.sp,
-                                        lineHeight = 21.sp,
-                                        bulletColor = AppleSystemBlue
+                        Column(
+                            modifier = Modifier
+                                .widthIn(max = 330.dp)
+                                .padding(horizontal = 2.dp, vertical = 2.dp)
+                        ) {
+                            MarkdownText(
+                                text = msg.text,
+                                textColor = AppleTextPrimary,
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
+                                bulletColor = AppleSystemBlue
+                            )
+
+                            msg.parsedTask?.let { parsed ->
+                                Spacer(modifier = Modifier.height(9.dp))
+
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(LiquidGlassTokens.GlassCardSurfaceBrush)
+                                        .border(
+                                            0.65.dp,
+                                            LiquidGlassTokens.GlassSpecularBorderBrush,
+                                            RoundedCornerShape(14.dp)
+                                        )
+                                        .padding(12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = parsed.subject,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = AppleSystemBlue
+                                        )
+                                        Text(
+                                            text = parsed.deadlineFormatted,
+                                            fontSize = 11.sp,
+                                            color = AppleTextSecondary
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    Text(
+                                        text = parsed.title,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = AppleTextPrimary
                                     )
 
-                                    // Parsed Task Preview inside bubble
-                                    msg.parsedTask?.let { parsed ->
-                                        Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
 
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .background(Color(0x35202838))
-                                                .background(LiquidGlassTokens.GlassCardSheenBrush)
-                                                .border(0.75.dp, LiquidGlassTokens.GlassSpecularBorderBrush, RoundedCornerShape(12.dp))
-                                                .padding(12.dp)
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.AutoAwesome,
-                                                        contentDescription = null,
-                                                        tint = AppleSystemBlue,
-                                                        modifier = Modifier.size(13.dp)
-                                                    )
-                                                    Spacer(modifier = Modifier.width(5.dp))
-                                                    Text(
-                                                        text = "TERDETEKSI OTOMATIS",
-                                                        fontSize = 10.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = AppleSystemBlue,
-                                                        letterSpacing = 0.5.sp
-                                                    )
-                                                }
-
-                                                Box(
-                                                    modifier = Modifier
-                                                        .clip(RoundedCornerShape(6.dp))
-                                                        .background(AppleSystemBlueSubtle)
-                                                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                                                ) {
-                                                    Text(
-                                                        text = parsed.subject,
-                                                        fontSize = 11.sp,
-                                                        color = AppleSystemBlue,
-                                                        fontWeight = FontWeight.SemiBold
-                                                    )
-                                                }
-                                            }
-
-                                            Spacer(modifier = Modifier.height(8.dp))
-
-                                            Text(
-                                                text = parsed.title,
-                                                fontSize = 16.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = AppleTextPrimary,
-                                                letterSpacing = (-0.2).sp
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Timer,
+                                                contentDescription = null,
+                                                tint = AppleTextSecondary,
+                                                modifier = Modifier.size(13.dp)
                                             )
-
-                                            Spacer(modifier = Modifier.height(8.dp))
-
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                            ) {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Schedule,
-                                                        contentDescription = null,
-                                                        tint = AppleTextSecondary,
-                                                        modifier = Modifier.size(13.dp)
-                                                    )
-                                                    Spacer(modifier = Modifier.width(4.dp))
-                                                    Text(
-                                                        text = parsed.deadlineFormatted,
-                                                        fontSize = 12.sp,
-                                                        color = AppleTextSecondary
-                                                    )
-                                                }
-
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Timer,
-                                                        contentDescription = null,
-                                                        tint = AppleTextSecondary,
-                                                        modifier = Modifier.size(13.dp)
-                                                    )
-                                                    Spacer(modifier = Modifier.width(4.dp))
-                                                    Text(
-                                                        text = "${parsed.estimatedMinutes} menit",
-                                                        fontSize = 12.sp,
-                                                        color = AppleTextSecondary
-                                                    )
-                                                }
-                                            }
-
-                                            if (!parsed.locationTag.isNullOrBlank()) {
-                                                Spacer(modifier = Modifier.height(6.dp))
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.LocationOn,
-                                                        contentDescription = null,
-                                                        tint = AppleSystemOrange,
-                                                        modifier = Modifier.size(13.dp)
-                                                    )
-                                                    Spacer(modifier = Modifier.width(4.dp))
-                                                    Text(
-                                                        text = parsed.locationTag,
-                                                        fontSize = 12.sp,
-                                                        color = AppleSystemOrange
-                                                    )
-                                                }
-                                            }
-
-                                            Spacer(modifier = Modifier.height(12.dp))
-
-                                            // Save Button
-                                            if (msg.isSavedToDatabase) {
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                    .clip(RoundedCornerShape(10.dp))
-                                                    .background(AppleSystemGreen.copy(alpha = 0.16f))
-                                                    .border(0.6.dp, AppleSystemGreen.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
-                                                    .padding(vertical = 9.dp),
-                                                    horizontalArrangement = Arrangement.Center,
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Check,
-                                                        contentDescription = null,
-                                                        tint = AppleSystemGreen,
-                                                        modifier = Modifier.size(15.dp)
-                                                    )
-                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                    Text(
-                                                        text = "Tersimpan di Pengingat & Jadwal",
-                                                        fontSize = 12.sp,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        color = AppleSystemGreen
-                                                    )
-                                                }
-                                            } else {
-                                                GlassButton(
-                                                    text = "Simpan ke Pengingat",
-                                                    onClick = {
-                                                        viewModel.saveTaskToDatabase(msg.id, parsed)
-                                                        Toast.makeText(context, "Tugas berhasil disimpan!", Toast.LENGTH_SHORT).show()
-                                                    },
-                                                    variant = GlassButtonVariant.PRIMARY,
-                                                    modifier = Modifier.fillMaxWidth()
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "${parsed.estimatedMinutes} menit",
+                                                fontSize = 12.sp,
+                                                color = AppleTextSecondary
+                                            )
+                                        }
+                                        if (!parsed.locationTag.isNullOrBlank()) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.LocationOn,
+                                                    contentDescription = null,
+                                                    tint = AppleSystemOrange,
+                                                    modifier = Modifier.size(13.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = parsed.locationTag,
+                                                    fontSize = 12.sp,
+                                                    color = AppleSystemOrange
                                                 )
                                             }
                                         }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    if (msg.isSavedToDatabase) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = AppleSystemGreen,
+                                                modifier = Modifier.size(15.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(5.dp))
+                                            Text(
+                                                text = "Tersimpan",
+                                                fontSize = 12.sp,
+                                                color = AppleSystemGreen,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                    } else {
+                                        GlassButton(
+                                            text = "Simpan Pengingat",
+                                            onClick = {
+                                                viewModel.saveTaskToDatabase(msg.id, parsed)
+                                                Toast.makeText(context, "Tugas berhasil disimpan", Toast.LENGTH_SHORT).show()
+                                            },
+                                            variant = GlassButtonVariant.PRIMARY,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
                                     }
                                 }
                             }
@@ -518,7 +457,7 @@ fun AiChatScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "AI menguraikan tugasmu...",
+                            text = "AI sedang berpikir...",
                             fontSize = 12.sp,
                             color = AppleTextSecondary
                         )
@@ -533,10 +472,10 @@ fun AiChatScreen(
                 .fillMaxWidth()
                 .padding(top = 4.dp, bottom = 8.dp)
                 .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(26.dp),
-                    spotColor = Color(0x45000000),
-                    ambientColor = Color(0x25000000)
+                    elevation = 3.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    spotColor = Color(0x26000000),
+                    ambientColor = Color(0x14000000)
                 )
                 .clip(RoundedCornerShape(26.dp))
                 .background(LiquidGlassTokens.GlassDockSurfaceBrush)

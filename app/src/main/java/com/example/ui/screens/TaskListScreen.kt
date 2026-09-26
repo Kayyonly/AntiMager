@@ -330,7 +330,7 @@ fun TaskListScreen(
                     .fillMaxWidth()
                     .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(top = 2.dp, bottom = 104.dp)
+                contentPadding = PaddingValues(top = 2.dp, bottom = 24.dp)
             ) {
                 if (uiState.tasks.isEmpty()) {
                     item {
@@ -393,7 +393,7 @@ fun TaskListScreen(
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 18.dp, bottom = 84.dp)
+                .padding(end = 18.dp, bottom = 16.dp)
                 .size(58.dp)
                 .shadow(
                     elevation = 14.dp,

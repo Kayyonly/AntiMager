@@ -227,6 +227,62 @@ object AiTaskParserService {
     }
 
     /**
+     * General Groq chat for non-task messages.
+     * This keeps greetings/questions from being turned into fake reminders.
+     */
+    suspend fun chatWithExternalApi(userMessage: String): String? = withContext(Dispatchers.IO) {
+        val apiKey = try { BuildConfig.GROQ_API_KEY } catch (_: Exception) { "" }
+        val configuredModel = try { BuildConfig.GROQ_MODEL } catch (_: Exception) { "" }
+        val model = configuredModel.ifBlank { "llama-3.3-70b-versatile" }
+
+        if (apiKey.isBlank() || apiKey == "MY_GROQ_API_KEY") return@withContext null
+
+        try {
+            val requestJson = JSONObject().apply {
+                put("model", model)
+                put("temperature", 0.35)
+                put("messages", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("role", "system")
+                        put(
+                            "content",
+                            "Kamu adalah AI Asisten AntiMager. Jawab bahasa Indonesia secara singkat, natural, dan membantu. " +
+                                "Jangan mengubah obrolan biasa menjadi tugas. Jika ditanya model AI, jawab bahwa teks memakai Groq dengan Llama 3.3 70B, " +
+                                "sedangkan scan foto jadwal memakai Gemini Vision."
+                        )
+                    })
+                    put(JSONObject().apply {
+                        put("role", "user")
+                        put("content", userMessage)
+                    })
+                })
+            }
+
+            val request = Request.Builder()
+                .url("https://api.groq.com/openai/v1/chat/completions")
+                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("Content-Type", "application/json")
+                .post(requestJson.toString().toRequestBody("application/json; charset=utf-8".toMediaType()))
+                .build()
+
+            val response = httpClient.newCall(request).execute()
+            if (!response.isSuccessful) return@withContext null
+
+            val body = response.body?.string() ?: return@withContext null
+            JSONObject(body)
+                .optJSONArray("choices")
+                ?.optJSONObject(0)
+                ?.optJSONObject("message")
+                ?.optString("content")
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Groq chat failed", e)
+            null
+        }
+    }
+
+    /**
      * Smart Indonesian Natural Language Parser (Offline & Fast)
      * Supports:
      * - "PR IPS besok"

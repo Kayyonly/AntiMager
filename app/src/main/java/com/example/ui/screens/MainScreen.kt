@@ -155,11 +155,15 @@ fun MainScreen(
                         )
                     } else {
                         Crossfade(targetState = selectedTab, label = "tab_transition") { tab ->
-                            val tabModifier = if (tab == MainTab.AI_CHAT) {
-                                Modifier.padding(bottom = if (!isImeVisible) paddingValues.calculateBottomPadding() else 0.dp)
-                            } else {
-                                Modifier
-                            }
+                            // Always reserve the real bottom-bar height so floating controls and
+                            // scroll content never sit behind the Liquid Glass dock.
+                            val tabModifier = Modifier.padding(
+                                bottom = if (!isImeVisible) {
+                                    paddingValues.calculateBottomPadding()
+                                } else {
+                                    0.dp
+                                }
+                            )
                             when (tab) {
                                 MainTab.TASKS -> TaskListScreen(viewModel = taskViewModel, modifier = tabModifier)
                                 MainTab.SCHEDULE -> ScheduleScreen(

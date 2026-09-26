@@ -62,60 +62,103 @@ class AiChatViewModel(application: Application) : AndroidViewModel(application) 
         val trimmed = prompt.trim()
         if (trimmed.isBlank()) return
 
-        val userMessage = ChatMessage(
-            sender = ChatSender.USER,
-            text = trimmed
-        )
-
-        val updatedList = _uiState.value.messages + userMessage
+        val userMessage = ChatMessage(sender = ChatSender.USER, text = trimmed)
         _uiState.value = _uiState.value.copy(
-            messages = updatedList,
+            messages = _uiState.value.messages + userMessage,
             inputText = "",
             isThinking = true
         )
 
         viewModelScope.launch {
-            delay(300)
+            delay(180)
+
+            if (!looksLikeTaskRequest(trimmed)) {
+                lastAmbiguousContext = null
+                val reply = AiTaskParserService.chatWithExternalApi(trimmed)
+                    ?: localChatFallback(trimmed)
+
+                _uiState.value = _uiState.value.copy(
+                    messages = _uiState.value.messages + ChatMessage(
+                        sender = ChatSender.AI,
+                        text = reply
+                    ),
+                    isThinking = false
+                )
+                return@launch
+            }
 
             val contextToUse = lastAmbiguousContext
-            // Parse with external API or fallback to Indonesian smart parser
             val parsedResult = AiTaskParserService.parseWithExternalApi(trimmed, contextToUse)
                 ?: AiTaskParserService.parseStory(trimmed, contextToUse)
 
             if (parsedResult.isAmbiguous) {
-                // Ambiguous input: ask follow-up clarification and remember context
                 lastAmbiguousContext = trimmed
-                val question = parsedResult.clarificationQuestion ?: "Tugas apa yang mau dikerjakan? Ceritakan judul atau mapelnya ya!"
-                val aiMessage = ChatMessage(
-                    sender = ChatSender.AI,
-                    text = question,
-                    parsedTask = null,
-                    isSavedToDatabase = false
-                )
+                val question = parsedResult.clarificationQuestion
+                    ?: "Tugas apa yang mau dikerjakan? Sebut judul atau mapelnya."
                 _uiState.value = _uiState.value.copy(
-                    messages = _uiState.value.messages + aiMessage,
+                    messages = _uiState.value.messages + ChatMessage(
+                        sender = ChatSender.AI,
+                        text = question
+                    ),
                     isThinking = false
                 )
             } else {
-                // Clear ambiguous context now that full task is resolved
                 lastAmbiguousContext = null
-                val aiResponseText = buildString {
-                    append("Siap! Udah aku uraikan jadi jadwal rapi nih 👇\n\n")
-                    append(parsedResult.aiAdvice)
-                }
-
                 val aiMessage = ChatMessage(
                     sender = ChatSender.AI,
-                    text = aiResponseText,
-                    parsedTask = parsedResult,
-                    isSavedToDatabase = false
+                    text = parsedResult.aiAdvice.ifBlank { "Sip, tugasnya sudah kebaca." },
+                    parsedTask = parsedResult
                 )
-
                 _uiState.value = _uiState.value.copy(
                     messages = _uiState.value.messages + aiMessage,
                     isThinking = false
                 )
             }
+        }
+    }
+
+    private fun looksLikeTaskRequest(text: String): Boolean {
+        val lower = text.lowercase()
+
+        val actionWords = listOf(
+            "pr ", "tugas", "kerjain", "kerjakan", "ngerjain", "ingatkan", "ingetin",
+            "jangan lupa", "deadline", "kumpul", "kumpulin", "beli ", "bawa ", "buat ",
+            "selesaikan", "belajar", "latihan", "rapat", "meeting"
+        )
+        val timeWords = listOf(
+            "besok", "lusa", "nanti", "pagi", "siang", "sore", "malam", "jam ",
+            "senin", "selasa", "rabu", "kamis", "jumat", "sabtu", "minggu"
+        )
+        val subjectWords = listOf(
+            "matematika", "mtk", "ips", "ipa", "biologi", "fisika", "kimia",
+            "bahasa inggris", "bahasa indonesia", "informatika", "agama", "pkn", "seni"
+        )
+
+        val questionLike = lower.startsWith("apa ") ||
+            lower.startsWith("siapa ") ||
+            lower.startsWith("kenapa ") ||
+            lower.startsWith("mengapa ") ||
+            lower.startsWith("gimana ") ||
+            lower.startsWith("bagaimana ") ||
+            lower.startsWith("kamu ")
+
+        val hasAction = actionWords.any { lower.contains(it) }
+        val hasTime = timeWords.any { lower.contains(it) }
+        val hasSubject = subjectWords.any { lower.contains(it) }
+
+        if (questionLike && !hasAction) return false
+        return hasAction || (hasTime && hasSubject)
+    }
+
+    private fun localChatFallback(text: String): String {
+        val lower = text.lowercase()
+        return when {
+            lower in setOf("hai", "halo", "hi", "hey", "p", "hii", "hallo") ->
+                "Hai. Mau bikin pengingat, atur jadwal, atau fokus ke tugas tertentu?"
+            lower.contains("ai apa") || lower.contains("model apa") || lower.contains("pake ai") ->
+                "Untuk teks aku pakai Groq dengan Llama 3.3 70B. Scan foto jadwal pakai Gemini Vision."
+            else ->
+                "Aku bisa bantu ngobrol singkat, tapi paling berguna buat tugas dan pengingat. Contoh: “PR IPS besok jam 8 pagi”."
         }
     }
 

@@ -29,41 +29,41 @@ val LiquidGlassBackgroundBrush = Brush.verticalGradient(
 // Main frosted layers. These remain deliberately translucent.
 val LiquidGlassCardSurfaceBrush = Brush.verticalGradient(
     listOf(
-        Color(0x492B323E),
-        Color(0x30202731),
-        Color(0x24171C24)
+        Color(0x302B323E),
+        Color(0x20202731),
+        Color(0x15171C24)
     )
 )
 
 val LiquidGlassCardSheenBrush = Brush.verticalGradient(
     listOf(
-        Color(0x22FFFFFF),
-        Color(0x0BFFFFFF),
+        Color(0x16FFFFFF),
+        Color(0x07FFFFFF),
         Color(0x00FFFFFF)
     )
 )
 
 val LiquidGlassSpecularBorderBrush = Brush.verticalGradient(
     listOf(
-        Color(0x5CFFFFFF),
-        Color(0x25FFFFFF),
-        Color(0x0FFFFFFF)
+        Color(0x44FFFFFF),
+        Color(0x1CFFFFFF),
+        Color(0x08FFFFFF)
     )
 )
 
 val LiquidGlassSpecularBorderBrushElevated = Brush.verticalGradient(
     listOf(
-        Color(0x7AFFFFFF),
-        Color(0x32FFFFFF),
-        Color(0x12FFFFFF)
+        Color(0x58FFFFFF),
+        Color(0x22FFFFFF),
+        Color(0x0CFFFFFF)
     )
 )
 
 // Floating chrome (bottom dock / floating controls)
 val LiquidGlassDockSurfaceBrush = Brush.verticalGradient(
     listOf(
-        Color(0xA62A303A),
-        Color(0x8A161B22)
+        Color(0x7A242A33),
+        Color(0x6813181F)
     )
 )
 
