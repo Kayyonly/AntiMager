@@ -14,6 +14,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -242,13 +244,25 @@ fun VoiceCommandDialog(
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        val modalShape = RoundedCornerShape(20.dp)
+        val modalShape = RoundedCornerShape(28.dp)
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .shadow(
+                    elevation = 18.dp,
+                    shape = modalShape,
+                    spotColor = Color(0x70000000),
+                    ambientColor = Color(0x34000000)
+                )
                 .clip(modalShape)
-                .background(Color(0xF818181A))
+                .background(LiquidGlassTokens.GlassModalSurfaceBrush)
+                .background(LiquidGlassTokens.GlassCardSheenBrush)
+                .border(
+                    width = 0.8.dp,
+                    brush = LiquidGlassTokens.GlassSpecularBorderBrushElevated,
+                    shape = modalShape
+                )
                 .padding(20.dp)
         ) {
             Column(
@@ -285,7 +299,12 @@ fun VoiceCommandDialog(
                     modifier = Modifier
                         .size(68.dp)
                         .clip(CircleShape)
-                        .background(if (isListening) AppleSystemBlue else Color(0xFF28282C))
+                        .background(if (isListening) AppleSystemBlue else Color(0x24FFFFFF))
+                        .border(
+                            0.8.dp,
+                            if (isListening) Color.White.copy(alpha = 0.28f) else Color(0x38FFFFFF),
+                            CircleShape
+                        )
                         .clickable {
                             if (isListening) {
                                 try {
@@ -334,9 +353,14 @@ fun VoiceCommandDialog(
                     onValueChange = {
                         spokenText = it
                         if (it.isNotBlank()) {
-                            val parsed = AiTaskParserService.parseStory(it)
-                            parsedResult = parsed
-                            statusText = if (parsed.isAmbiguous) parsed.aiAdvice else "Tugas dikenali!"
+                            isParsing = true
+                            coroutineScope.launch {
+                                val parsed = AiTaskParserService.parseWithExternalApi(it)
+                                    ?: AiTaskParserService.parseStory(it)
+                                parsedResult = parsed
+                                isParsing = false
+                                statusText = if (parsed.isAmbiguous) parsed.aiAdvice else "Tugas dikenali!"
+                            }
                         } else {
                             parsedResult = null
                             statusText = "Ketik atau katakan tugasmu..."
@@ -350,8 +374,8 @@ fun VoiceCommandDialog(
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = AppleSystemBlue,
                         unfocusedBorderColor = Color.Transparent,
-                        focusedContainerColor = Color(0xFF222226),
-                        unfocusedContainerColor = Color(0xFF222226),
+                        focusedContainerColor = Color(0x18FFFFFF),
+                        unfocusedContainerColor = Color(0x18FFFFFF),
                         focusedTextColor = AppleTextPrimary,
                         unfocusedTextColor = AppleTextPrimary
                     ),
@@ -374,7 +398,7 @@ fun VoiceCommandDialog(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFF242428))
+                                .background(Color(0x18FFFFFF))
                                 .clickable {
                                     processRecognizedText(preset)
                                 }
@@ -400,7 +424,7 @@ fun VoiceCommandDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFF222226))
+                                .background(Color(0x18FFFFFF))
                                 .padding(12.dp)
                         ) {
                             Row(
