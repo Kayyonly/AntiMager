@@ -6,7 +6,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
@@ -49,9 +50,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.awaitFirstDown
+import androidx.compose.ui.input.pointer.awaitPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -216,40 +221,45 @@ fun IosBottomNavigationBar(
                     .pointerInput(dockWidthPx, tabs.size) {
                         if (dockWidthPx <= 0) return@pointerInput
 
-                        detectHorizontalDragGestures(
-                            onDragStart = { touch ->
-                                val segmentWidth = dockWidthPx.toFloat() / tabs.size
-                                isDragging = true
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            val segmentWidth = dockWidthPx.toFloat() / tabs.size
+
+                            // Start tracking immediately, without Android's normal touch-slop delay.
+                            // This is what makes the glass capsule feel attached to the finger.
+                            isDragging = true
+                            dragPosition = (
+                                down.position.x / segmentWidth - 0.5f
+                            ).coerceIn(0f, tabs.lastIndex.toFloat())
+
+                            var lastPressed = true
+                            while (lastPressed) {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+
                                 dragPosition = (
-                                    touch.x / segmentWidth - 0.5f
-                                ).coerceIn(0f, (tabs.size - 1).toFloat())
-                            },
-                            onHorizontalDrag = { change, dragAmount ->
+                                    change.position.x / segmentWidth - 0.5f
+                                ).coerceIn(0f, tabs.lastIndex.toFloat())
+
+                                lastPressed = change.pressed
                                 change.consume()
-                                val segmentWidth = dockWidthPx.toFloat() / tabs.size
-                                dragPosition = (
-                                    dragPosition + dragAmount / segmentWidth
-                                ).coerceIn(0f, (tabs.size - 1).toFloat())
-                            },
-                            onDragEnd = {
-                                val targetIndex = dragPosition
-                                    .roundToInt()
-                                    .coerceIn(0, tabs.lastIndex)
-                                isDragging = false
-                                dragPosition = targetIndex.toFloat()
-                                onSelectTab(tabs[targetIndex])
-                            },
-                            onDragCancel = {
-                                isDragging = false
-                                dragPosition = selectedIndex.toFloat()
                             }
-                        )
+
+                            val targetIndex = dragPosition
+                                .roundToInt()
+                                .coerceIn(0, tabs.lastIndex)
+
+                            isDragging = false
+                            dragPosition = targetIndex.toFloat()
+                            onSelectTab(tabs[targetIndex])
+                        }
                     }
             ) {
                 // The active Liquid Glass capsule physically follows the finger.
                 // Tapping still works; dragging left/right gives the iOS-like scrub interaction.
                 if (dockWidthPx > 0) {
                     val segmentWidthPx = dockWidthPx.toFloat() / tabs.size
+                    val segmentWidthDp = with(LocalDensity.current) { segmentWidthPx.toDp() }
 
                     Box(
                         modifier = Modifier
@@ -259,14 +269,20 @@ fun IosBottomNavigationBar(
                                     y = 0
                                 )
                             }
-                            .fillMaxWidth(1f / tabs.size)
+                            // Important: keep the capsule exactly one tab wide.
+                            // The old fillMaxSize() made the glass layer occupy the whole dock.
+                            .width(segmentWidthDp)
                             .fillMaxSize()
                             .padding(horizontal = 2.dp, vertical = 1.dp)
+                            .graphicsLayer {
+                                scaleX = if (isDragging) 1.08f else 1f
+                                scaleY = if (isDragging) 0.94f else 1f
+                            }
                             .clip(activeShape)
-                            .background(Color(0x2BFFFFFF))
+                            .background(Color(0x30FFFFFF))
                             .border(
-                                width = 0.8.dp,
-                                color = Color(0x38FFFFFF),
+                                width = 0.9.dp,
+                                color = Color(0x4AFFFFFF),
                                 shape = activeShape
                             )
                     )
@@ -284,12 +300,7 @@ fun IosBottomNavigationBar(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxSize()
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable {
-                                    isDragging = false
-                                    dragPosition = tabs.indexOf(tab).toFloat()
-                                    onSelectTab(tab)
-                                },
+                                .clip(RoundedCornerShape(16.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
