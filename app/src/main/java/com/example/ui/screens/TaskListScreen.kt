@@ -264,7 +264,7 @@ fun TaskListScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
-                            .clickable { viewModel.triggerGeminiAiSort() }
+                            .clickable { viewModel.triggerGroqAiSort() }
                             .padding(vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
