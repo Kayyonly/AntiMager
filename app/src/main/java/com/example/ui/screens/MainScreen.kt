@@ -1,9 +1,12 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -33,7 +37,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,6 +50,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,6 +77,7 @@ import com.example.ui.viewmodel.HabitViewModel
 import com.example.ui.viewmodel.ScheduleViewModel
 import com.example.ui.viewmodel.SettingsViewModel
 import com.example.ui.viewmodel.TaskViewModel
+import kotlin.math.roundToInt
 
 enum class MainTab(
     val title: String,
@@ -146,7 +157,32 @@ fun IosBottomNavigationBar(
     onSelectTab: (MainTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val tabs = MainTab.entries
     val dockShape = RoundedCornerShape(24.dp)
+    val activeShape = RoundedCornerShape(18.dp)
+
+    var dockWidthPx by remember { mutableIntStateOf(0) }
+    var isDragging by remember { mutableStateOf(false) }
+    var dragPosition by remember {
+        mutableFloatStateOf(tabs.indexOf(selectedTab).coerceAtLeast(0).toFloat())
+    }
+
+    val selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0)
+
+    LaunchedEffect(selectedIndex) {
+        if (!isDragging) {
+            dragPosition = selectedIndex.toFloat()
+        }
+    }
+
+    val indicatorPosition by animateFloatAsState(
+        targetValue = if (isDragging) dragPosition else selectedIndex.toFloat(),
+        animationSpec = spring(
+            dampingRatio = 0.72f,
+            stiffness = 520f
+        ),
+        label = "liquid_glass_tab_position"
+    )
 
     Box(
         modifier = modifier
@@ -157,55 +193,124 @@ fun IosBottomNavigationBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .height(62.dp)
                 .shadow(
-                    elevation = 6.dp,
+                    elevation = 8.dp,
                     shape = dockShape,
                     spotColor = Color(0x33000000),
                     ambientColor = Color(0x20000000)
                 )
                 .clip(dockShape)
-                .background(Color(0xF0141417))
+                .background(Color(0xD9141417))
                 .border(
-                    width = 0.6.dp,
+                    width = 0.7.dp,
                     color = GlassBorderSubtle,
                     shape = dockShape
                 )
-                .padding(horizontal = 4.dp, vertical = 6.dp)
+                .padding(horizontal = 4.dp, vertical = 5.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onSizeChanged { dockWidthPx = it.width }
+                    .pointerInput(dockWidthPx, tabs.size) {
+                        if (dockWidthPx <= 0) return@pointerInput
+
+                        detectHorizontalDragGestures(
+                            onDragStart = { touch ->
+                                val segmentWidth = dockWidthPx.toFloat() / tabs.size
+                                isDragging = true
+                                dragPosition = (
+                                    touch.x / segmentWidth - 0.5f
+                                ).coerceIn(0f, (tabs.size - 1).toFloat())
+                            },
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+                                val segmentWidth = dockWidthPx.toFloat() / tabs.size
+                                dragPosition = (
+                                    dragPosition + dragAmount / segmentWidth
+                                ).coerceIn(0f, (tabs.size - 1).toFloat())
+                            },
+                            onDragEnd = {
+                                val targetIndex = dragPosition
+                                    .roundToInt()
+                                    .coerceIn(0, tabs.lastIndex)
+                                isDragging = false
+                                dragPosition = targetIndex.toFloat()
+                                onSelectTab(tabs[targetIndex])
+                            },
+                            onDragCancel = {
+                                isDragging = false
+                                dragPosition = selectedIndex.toFloat()
+                            }
+                        )
+                    }
             ) {
-                MainTab.entries.forEach { tab ->
-                    val isSelected = selectedTab == tab
+                // The active Liquid Glass capsule physically follows the finger.
+                // Tapping still works; dragging left/right gives the iOS-like scrub interaction.
+                if (dockWidthPx > 0) {
+                    val segmentWidthPx = dockWidthPx.toFloat() / tabs.size
 
                     Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .clickable { onSelectTab(tab) }
-                            .padding(vertical = 5.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            .offset {
+                                IntOffset(
+                                    x = (segmentWidthPx * indicatorPosition).roundToInt(),
+                                    y = 0
+                                )
+                            }
+                            .fillMaxWidth(1f / tabs.size)
+                            .fillMaxSize()
+                            .padding(horizontal = 2.dp, vertical = 1.dp)
+                            .clip(activeShape)
+                            .background(Color(0x2BFFFFFF))
+                            .border(
+                                width = 0.8.dp,
+                                color = Color(0x38FFFFFF),
+                                shape = activeShape
+                            )
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    tabs.forEach { tab ->
+                        val isSelected = selectedTab == tab
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable {
+                                    isDragging = false
+                                    dragPosition = tabs.indexOf(tab).toFloat()
+                                    onSelectTab(tab)
+                                },
+                            contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = if (isSelected) tab.selectedIcon else tab.unselectedIcon,
-                                contentDescription = tab.title,
-                                tint = if (isSelected) AppleSystemBlue else AppleTextTertiary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                text = tab.title,
-                                fontSize = 10.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) AppleSystemBlue else AppleTextTertiary,
-                                letterSpacing = (-0.1).sp
-                            )
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isSelected) tab.selectedIcon else tab.unselectedIcon,
+                                    contentDescription = tab.title,
+                                    tint = if (isSelected) AppleSystemBlue else AppleTextTertiary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    text = tab.title,
+                                    fontSize = 10.sp,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = if (isSelected) AppleSystemBlue else AppleTextTertiary,
+                                    letterSpacing = (-0.1).sp
+                                )
+                            }
                         }
                     }
                 }
@@ -213,3 +318,4 @@ fun IosBottomNavigationBar(
         }
     }
 }
+
