@@ -24,6 +24,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE id = :id LIMIT 1")
     suspend fun getTaskById(id: Long): TaskEntity?
 
+    @Query("SELECT * FROM tasks WHERE externalId = :externalId LIMIT 1")
+    suspend fun getTaskByExternalId(externalId: String): TaskEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTask(task: TaskEntity): Long
 
@@ -39,7 +42,7 @@ interface TaskDao {
     @Query("UPDATE tasks SET isCompleted = :isCompleted WHERE id = :id")
     suspend fun setTaskCompleted(id: Long, isCompleted: Boolean)
 
-    @Query("UPDATE tasks SET snoozeCount = snoozeCount + 1, deadlineEpochMillis = :newDeadline WHERE id = :id")
+    @Query("UPDATE tasks SET snoozeCount = snoozeCount + 1, deadlineEpochMillis = :newDeadline, reminderMinutesBefore = 0 WHERE id = :id")
     suspend fun snoozeTask(id: Long, newDeadline: Long)
 
     @Query("SELECT * FROM tasks WHERE locationName IS NOT NULL AND isCompleted = 0")
