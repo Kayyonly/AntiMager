@@ -328,12 +328,13 @@ client.on("message_create", async (msg) => {
       saveState();
 
       await sendToSelf(
-        "Tersimpan ke antrean AntiMager.\\n\\n" +
+        "*Tugas baru berhasil ditambahkan ke AntiMager*\n\n" +
         "Tugas: " + task.title +
-        "\\nKategori: " + task.subject +
-        "\\nDeadline: " + formatDeadline(task.deadlineEpochMillis) +
-        "\\nReminder: " + reminderLabel(task.reminderMinutesBefore) +
-        "\\n\\nBuka AntiMager di HP untuk sinkron."
+        "\nKategori: " + task.subject +
+        "\nDeadline: " + formatDeadline(task.deadlineEpochMillis) +
+        "\nReminder: " + reminderLabel(task.reminderMinutesBefore) +
+        "\nPrioritas: " + task.priority +
+        "\n\nStatus: menunggu sinkronisasi ke app di HP."
       );
 
       console.log("Task WhatsApp dibuat:", task.title);
