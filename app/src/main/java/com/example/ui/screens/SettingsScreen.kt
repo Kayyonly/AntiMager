@@ -43,6 +43,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.data.repository.AppBlockerManager
+import com.example.data.service.WhatsAppBridgeService
 import com.example.ui.components.GlassButton
 import com.example.ui.components.GlassButtonVariant
 import com.example.ui.components.GlassCard
@@ -78,6 +83,7 @@ import com.example.ui.theme.LiquidDarkBackground
 import com.example.ui.theme.LiquidDarkCard
 import com.example.ui.viewmodel.SettingsViewModel
 import com.example.util.LocationReminderManager
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -96,6 +102,10 @@ fun SettingsScreen(
         context,
         Manifest.permission.RECORD_AUDIO
     ) == PackageManager.PERMISSION_GRANTED
+
+    var bridgeUrl by remember { mutableStateOf(WhatsAppBridgeService.getBaseUrl(context)) }
+    var bridgeStatus by remember { mutableStateOf<String?>(null) }
+    val bridgeScope = rememberCoroutineScope()
 
     LaunchedEffect(uiState.saveMessage) {
         uiState.saveMessage?.let {
@@ -315,7 +325,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Groq (Llama 3.3 70B)",
+                            text = "Groq (GPT-OSS 120B)",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = AppleTextPrimary,
@@ -402,7 +412,77 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // SECTION 3: SYSTEM AUDIT STATUS
+        // SECTION 3: WHATSAPP BRIDGE
+        IosSectionHeader(title = "WhatsApp Bridge")
+
+        GlassCard(elevation = 2.dp) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Sinkron tugas dari chat diri sendiri",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppleTextPrimary
+                )
+                Text(
+                    text = "Laptop dan HP harus berada di Wi-Fi yang sama. Masukkan URL yang muncul di terminal AntiMager-WA.",
+                    fontSize = 12.sp,
+                    color = AppleTextSecondary
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = bridgeUrl,
+                    onValueChange = { bridgeUrl = it },
+                    placeholder = { Text("Contoh: http://192.168.1.5:3000", color = AppleTextPlaceholder, fontSize = 13.sp) },
+                    label = { Text("URL Bridge Laptop", fontSize = 12.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(LiquidGlassTokens.RadiusInput),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AppleSystemBlue,
+                        unfocusedBorderColor = GlassBorderStandard,
+                        focusedTextColor = AppleTextPrimary,
+                        unfocusedTextColor = AppleTextPrimary,
+                        focusedContainerColor = LiquidDarkCard,
+                        unfocusedContainerColor = LiquidDarkCard
+                    ),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                GlassButton(
+                    text = "Simpan & Sinkronkan",
+                    onClick = {
+                        WhatsAppBridgeService.setBaseUrl(context, bridgeUrl)
+                        bridgeStatus = "Menghubungkan..."
+                        bridgeScope.launch {
+                            val result = WhatsAppBridgeService.syncPendingTasks(
+                                context = context,
+                                taskDao = com.example.AntiMagerApp.instance.database.taskDao()
+                            )
+                            bridgeStatus = result.message
+                        }
+                    },
+                    icon = Icons.Default.Check,
+                    variant = GlassButtonVariant.PRIMARY,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                bridgeStatus?.let { status ->
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = status,
+                        fontSize = 12.sp,
+                        color = if (status.startsWith("Terhubung")) AppleSystemGreen else AppleTextSecondary
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // SECTION 4: SYSTEM AUDIT STATUS
         IosSectionHeader(title = "Status Fitur Proteksi")
 
         GlassCard(elevation = 2.dp) {
@@ -446,7 +526,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Smart Priority Sorting", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = AppleTextPrimary)
-                        Text("Groq Llama 3.3 70B + reasoning rationale", fontSize = 11.sp, color = AppleTextSecondary)
+                        Text("Groq GPT-OSS 120B + reasoning rationale", fontSize = 11.sp, color = AppleTextSecondary)
                     }
                     Box(
                         modifier = Modifier
