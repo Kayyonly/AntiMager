@@ -21,5 +21,8 @@ data class TaskEntity(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val aiMotivationQuote: String? = null,
+    val reminderMinutesBefore: Int = 0,
+    val source: String = "APP",
+    val externalId: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
