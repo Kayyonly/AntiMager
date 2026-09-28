@@ -10,6 +10,7 @@ import com.example.data.local.entity.TaskEntity
 import com.example.data.repository.TaskRepository
 import com.example.data.service.AiPrioritySortResult
 import com.example.data.service.GroqPriorityService
+import com.example.data.service.WhatsAppBridgeService
 import com.example.util.LocationReminderManager
 import com.example.util.NotificationHelper
 import com.example.util.SmartPrioritySorter
@@ -168,8 +169,21 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     init {
-        // Automatically perform smart priority sorting on startup
+        syncWhatsAppBridge()
         triggerGroqAiSort()
+    }
+
+    fun syncWhatsAppBridge() {
+        viewModelScope.launch {
+            val result = WhatsAppBridgeService.syncPendingTasks(
+                context = getApplication(),
+                taskDao = AntiMagerApp.instance.database.taskDao()
+            )
+            if (result.importedCount > 0) {
+                AntiMagerWidgetProvider.sendUpdateBroadcast(getApplication())
+                triggerGroqAiSort()
+            }
+        }
     }
 
     fun triggerGroqAiSort() {
@@ -223,7 +237,8 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
             repository.snoozeTask(task.id, newDeadline)
             val updated = task.copy(
                 deadlineEpochMillis = newDeadline,
-                snoozeCount = task.snoozeCount + 1
+                snoozeCount = task.snoozeCount + 1,
+                reminderMinutesBefore = 0
             )
             NotificationHelper.dismissNotification(getApplication(), task.id)
             TaskReminderScheduler.schedule(getApplication(), updated)
