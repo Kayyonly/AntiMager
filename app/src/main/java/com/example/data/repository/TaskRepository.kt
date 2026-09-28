@@ -11,6 +11,9 @@ class TaskRepository(private val taskDao: TaskDao) {
 
     suspend fun getTaskById(id: Long): TaskEntity? = taskDao.getTaskById(id)
 
+    suspend fun getTaskByExternalId(externalId: String): TaskEntity? =
+        taskDao.getTaskByExternalId(externalId)
+
     suspend fun insertTask(task: TaskEntity): Long = taskDao.insertTask(task)
 
     suspend fun updateTask(task: TaskEntity) = taskDao.updateTask(task)
