@@ -14,10 +14,12 @@ object TaskReminderScheduler {
     const val EXTRA_TASK_ID = "extra_task_id"
 
     fun schedule(context: Context, task: TaskEntity) {
-        if (task.id <= 0L || task.isCompleted) return
+        if (task.id <= 0L || task.isCompleted || task.reminderMinutesBefore < 0) return
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val triggerAt = task.deadlineEpochMillis.coerceAtLeast(System.currentTimeMillis() + 1_000L)
+        val reminderOffset = task.reminderMinutesBefore.toLong() * 60_000L
+        val triggerAt = (task.deadlineEpochMillis - reminderOffset)
+            .coerceAtLeast(System.currentTimeMillis() + 1_000L)
         val pendingIntent = pendingIntent(context, task.id)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
