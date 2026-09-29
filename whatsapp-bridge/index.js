@@ -121,7 +121,12 @@ function nowJakartaText() {
 async function groqJson(messages) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY belum diisi di .env");
 
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+
+  let response;
+  try {
+    response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: "Bearer " + GROQ_API_KEY,
@@ -134,8 +139,12 @@ async function groqJson(messages) {
       reasoning_format: "hidden",
       response_format: { type: "json_object" },
       messages
-    })
-  });
+    }),
+    signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     const body = await response.text();
@@ -148,12 +157,41 @@ async function groqJson(messages) {
   return JSON.parse(text);
 }
 
+function fallbackTaskDraft(originalText) {
+  const lower = originalText.toLowerCase();
+
+  let subject = "Umum";
+  if (/\b(mtk|matematika|math)\b/.test(lower)) subject = "Matematika";
+  else if (/\b(ips)\b/.test(lower)) subject = "IPS";
+  else if (/\b(ipa|sains|science)\b/.test(lower)) subject = "IPA";
+  else if (/\b(b\.?\s?indo|bahasa indonesia|indo)\b/.test(lower)) subject = "Bahasa Indonesia";
+  else if (/\b(inggris|bahasa inggris|english)\b/.test(lower)) subject = "Bahasa Inggris";
+  else if (/\b(ppkn|pkn)\b/.test(lower)) subject = "PPKn";
+  else if (/\b(agama)\b/.test(lower)) subject = "Agama";
+
+  return {
+    originalText,
+    title: originalText.trim(),
+    subject,
+    description: originalText.trim(),
+    deadlineEpochMillis: null,
+    needsDeadline: true,
+    estimatedMinutes: 30,
+    priority: "MEDIUM",
+    locationName: null,
+    aiAdvice: ""
+  };
+}
+
 async function parseTaskDraft(originalText, deadlineAnswer) {
   const context = deadlineAnswer
     ? 'Command awal: "' + originalText + '"\nJawaban deadline: "' + deadlineAnswer + '"'
     : 'Command: "' + originalText + '"';
 
-  const parsed = await groqJson([
+  let parsed;
+  try {
+    console.log("Memproses task dengan Groq...");
+    parsed = await groqJson([
     {
       role: "system",
       content:
@@ -171,6 +209,14 @@ async function parseTaskDraft(originalText, deadlineAnswer) {
         '"needsDeadline":true,"estimatedMinutes":30,"priority":"MEDIUM","locationName":null,"aiAdvice":""}'
     }
   ]);
+    console.log("Groq selesai memproses task.");
+  } catch (error) {
+    console.warn("Groq parser gagal, pakai fallback lokal:", error.message || error);
+    if (!deadlineAnswer) {
+      return fallbackTaskDraft(originalText);
+    }
+    throw error;
+  }
 
   const deadlineMs = parsed.deadlineIso ? Date.parse(parsed.deadlineIso) : NaN;
 
