@@ -408,11 +408,12 @@ client.on("message_create", async (msg) => {
         return;
       }
 
-      state.conversation = { step: "reminder", draft: updated };
+      const activeChatJid = state.conversation.chatJid;
+      state.conversation = { chatJid: activeChatJid, step: "reminder", draft: updated };
       saveState();
 
       await sendToChat(
-        state.conversation.chatJid,
+        activeChatJid,
         "Sip. Deadline " + formatDeadline(updated.deadlineEpochMillis) +
         ".\nMau diingatkan kapan? Contoh: 30 menit sebelumnya, 1 jam sebelumnya, pas deadline, atau gausah."
       );
