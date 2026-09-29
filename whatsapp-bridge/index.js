@@ -76,7 +76,7 @@ api.post("/api/tasks/:id/ack", requireToken, (req, res) => {
 });
 
 api.listen(PORT, "0.0.0.0", () => {
-  console.log("\\nAntiMager Bridge API aktif di port " + PORT);
+  console.log("\nAntiMager Bridge API aktif di port " + PORT);
   const addresses = localAddresses();
   if (addresses.length) {
     console.log("Masukkan URL ini ke AntiMager > Pengaturan > WhatsApp Bridge:");
@@ -95,7 +95,7 @@ const client = new Client({
 });
 
 client.on("qr", (qr) => {
-  console.log("\\nScan QR WhatsApp:");
+  console.log("\nScan QR WhatsApp:");
   qrcode.generate(qr, { small: true });
 });
 
@@ -150,7 +150,7 @@ async function groqJson(messages) {
 
 async function parseTaskDraft(originalText, deadlineAnswer) {
   const context = deadlineAnswer
-    ? 'Command awal: "' + originalText + '"\\nJawaban deadline: "' + deadlineAnswer + '"'
+    ? 'Command awal: "' + originalText + '"\nJawaban deadline: "' + deadlineAnswer + '"'
     : 'Command: "' + originalText + '"';
 
   const parsed = await groqJson([
@@ -167,7 +167,7 @@ async function parseTaskDraft(originalText, deadlineAnswer) {
       role: "user",
       content:
         context +
-        '\\nBalas HANYA JSON: {"title":"","subject":"Umum","description":"","deadlineIso":null,' +
+        '\nBalas HANYA JSON: {"title":"","subject":"Umum","description":"","deadlineIso":null,' +
         '"needsDeadline":true,"estimatedMinutes":30,"priority":"MEDIUM","locationName":null,"aiAdvice":""}'
     }
   ]);
@@ -196,14 +196,15 @@ function parseReminder(text) {
   if (/^(ga ?usah|gak ?usah|tidak ?usah|tanpa reminder|tanpa pengingat|skip)$/.test(value)) return -1;
   if (/(pas deadline|saat deadline|tepat deadline)/.test(value)) return 0;
   if (/(malam sebelumnya|malam sebelum)/.test(value)) return 720;
+  if (/^(sehari|satu hari)\s+(sebelumnya|sebelum)$/.test(value)) return 1440;
 
-  const minutes = value.match(/(\\d+)\\s*(menit|mnt|min)/);
+  const minutes = value.match(/(\d+)\s*(menit|mnt|min)/);
   if (minutes) return Math.max(0, Number(minutes[1]));
 
-  const hours = value.match(/(\\d+)\\s*(jam|hour)/);
+  const hours = value.match(/(\d+)\s*(jam|hour)/);
   if (hours) return Math.max(0, Number(hours[1]) * 60);
 
-  const days = value.match(/(\\d+)\\s*(hari|day)/);
+  const days = value.match(/(\d+)\s*(hari|day)/);
   if (days) return Math.max(0, Number(days[1]) * 1440);
 
   return null;
@@ -270,8 +271,8 @@ client.on("message_create", async (msg) => {
       } else {
         await sendToSelf(
           "Kebaca: " + draft.title +
-          "\\nDeadline: " + formatDeadline(draft.deadlineEpochMillis) +
-          "\\nMau diingatkan kapan? Contoh: 30 menit sebelumnya, 1 jam sebelumnya, pas deadline, atau gausah."
+          "\nDeadline: " + formatDeadline(draft.deadlineEpochMillis) +
+          "\nMau diingatkan kapan? Contoh: 30 menit sebelumnya, 1 jam sebelumnya, pas deadline, atau gausah."
         );
       }
       return;
@@ -292,7 +293,7 @@ client.on("message_create", async (msg) => {
 
       await sendToSelf(
         "Sip. Deadline " + formatDeadline(updated.deadlineEpochMillis) +
-        ".\\nMau diingatkan kapan? Contoh: 30 menit sebelumnya, 1 jam sebelumnya, pas deadline, atau gausah."
+        ".\nMau diingatkan kapan? Contoh: 30 menit sebelumnya, 1 jam sebelumnya, pas deadline, atau gausah."
       );
       return;
     }
