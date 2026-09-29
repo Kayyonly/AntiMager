@@ -272,8 +272,8 @@ function reminderLabel(minutes) {
   return minutes + " menit sebelumnya";
 }
 
-async function sendToSelf(text) {
-  if (state.selfChatJid) await client.sendMessage(state.selfChatJid, text);
+async function sendToChat(chatJid, text) {
+  if (chatJid) await client.sendMessage(chatJid, text);
 }
 
 client.on("message_create", async (msg) => {
@@ -288,34 +288,31 @@ client.on("message_create", async (msg) => {
     if (ownPhoneJid && msg.from !== ownPhoneJid) return;
 
     if (text.startsWith("+")) {
-      // Command boleh diketik dari chat mana pun selama dikirim oleh akun sendiri.
-      // Percakapan bot tetap diarahkan ke self-chat supaya tidak spam teman/grup.
-      if (!state.selfChatJid) {
-        console.log("Self-chat belum dikenali. Kirim satu command + dari chat diri sendiri dulu untuk setup.");
-        return;
-      }
-
-      const commandSource = msg.to === state.selfChatJid ? "self-chat" : "chat lain";
-      console.log("Command + diterima dari", commandSource, "->", msg.to);
+      // Command boleh diketik dari chat mana pun yang kamu kirim sendiri.
+      // Bot membalas dan melanjutkan percakapan di chat yang sama.
+      const commandChatJid = msg.to;
+      console.log("Command + diterima dari chat ->", commandChatJid);
 
       const command = text.slice(1).trim();
       if (!command) {
-        await sendToSelf("Tulis tugas setelah +. Contoh: + ada PR B Indo");
+        await sendToChat(commandChatJid, "Tulis tugas setelah +. Contoh: + ada PR B Indo");
         return;
       }
 
       const draft = await parseTaskDraft(command);
-      draft.sourceChatJid = msg.to;
+      draft.sourceChatJid = commandChatJid;
       state.conversation = {
+        chatJid: commandChatJid,
         step: draft.needsDeadline ? "deadline" : "reminder",
         draft
       };
       saveState();
 
       if (draft.needsDeadline) {
-        await sendToSelf('Oke, "' + draft.title + '". Deadline-nya kapan?');
+        await sendToChat(commandChatJid, 'Oke, "' + draft.title + '". Deadline-nya kapan?');
       } else {
-        await sendToSelf(
+        await sendToChat(
+          commandChatJid,
           "Kebaca: " + draft.title +
           "\nDeadline: " + formatDeadline(draft.deadlineEpochMillis) +
           "\nMau diingatkan kapan? Contoh: 30 menit sebelumnya, 1 jam sebelumnya, pas deadline, atau gausah."
@@ -324,20 +321,21 @@ client.on("message_create", async (msg) => {
       return;
     }
 
-    if (!state.selfChatJid || msg.to !== state.selfChatJid || !state.conversation) return;
+    if (!state.conversation || msg.to !== state.conversation.chatJid) return;
 
     if (state.conversation.step === "deadline") {
       const updated = await parseTaskDraft(state.conversation.draft.originalText, text);
 
       if (updated.needsDeadline || !updated.deadlineEpochMillis) {
-        await sendToSelf("Aku belum nangkep waktunya. Contoh: besok jam 8 pagi atau Jumat jam 16.00.");
+        await sendToChat(state.conversation.chatJid, "Aku belum nangkep waktunya. Contoh: besok jam 8 pagi atau Jumat jam 16.00.");
         return;
       }
 
       state.conversation = { step: "reminder", draft: updated };
       saveState();
 
-      await sendToSelf(
+      await sendToChat(
+        state.conversation.chatJid,
         "Sip. Deadline " + formatDeadline(updated.deadlineEpochMillis) +
         ".\nMau diingatkan kapan? Contoh: 30 menit sebelumnya, 1 jam sebelumnya, pas deadline, atau gausah."
       );
@@ -348,10 +346,11 @@ client.on("message_create", async (msg) => {
       const reminderMinutesBefore = parseReminder(text);
 
       if (reminderMinutesBefore === null) {
-        await sendToSelf("Pilih misalnya: 30 menit sebelumnya, 1 jam sebelumnya, pas deadline, atau gausah.");
+        await sendToChat(state.conversation.chatJid, "Pilih misalnya: 30 menit sebelumnya, 1 jam sebelumnya, pas deadline, atau gausah.");
         return;
       }
 
+      const conversationChatJid = state.conversation.chatJid;
       const draft = state.conversation.draft;
       const task = {
         id: "wa_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
@@ -374,7 +373,8 @@ client.on("message_create", async (msg) => {
       state.conversation = null;
       saveState();
 
-      await sendToSelf(
+      await sendToChat(
+        conversationChatJid,
         "*Tugas baru berhasil ditambahkan ke AntiMager*\n\n" +
         "Tugas: " + task.title +
         "\nKategori: " + task.subject +
@@ -389,7 +389,7 @@ client.on("message_create", async (msg) => {
   } catch (error) {
     console.error("WhatsApp flow error:", error);
     try {
-      await sendToSelf("Ada error saat membaca tugas. Coba lagi dengan command + baru.");
+      await sendToChat(state.conversation?.chatJid || msg.to, "Ada error saat membaca tugas. Coba lagi dengan command + baru.");
     } catch {}
   }
 });
