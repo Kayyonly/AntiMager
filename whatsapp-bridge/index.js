@@ -242,16 +242,15 @@ client.on("message_create", async (msg) => {
     if (ownPhoneJid && msg.from !== ownPhoneJid) return;
 
     if (text.startsWith("+")) {
+      // Command boleh diketik dari chat mana pun selama dikirim oleh akun sendiri.
+      // Percakapan bot tetap diarahkan ke self-chat supaya tidak spam teman/grup.
       if (!state.selfChatJid) {
-        state.selfChatJid = msg.to;
-        saveState();
-        console.log("Self-chat dikunci ke:", state.selfChatJid);
-      }
-
-      if (msg.to !== state.selfChatJid) {
-        console.log("Command + diabaikan karena bukan chat diri sendiri.");
+        console.log("Self-chat belum dikenali. Kirim satu command + dari chat diri sendiri dulu untuk setup.");
         return;
       }
+
+      const commandSource = msg.to === state.selfChatJid ? "self-chat" : "chat lain";
+      console.log("Command + diterima dari", commandSource, "->", msg.to);
 
       const command = text.slice(1).trim();
       if (!command) {
@@ -260,6 +259,7 @@ client.on("message_create", async (msg) => {
       }
 
       const draft = await parseTaskDraft(command);
+      draft.sourceChatJid = msg.to;
       state.conversation = {
         step: draft.needsDeadline ? "deadline" : "reminder",
         draft
